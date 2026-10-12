@@ -1,5 +1,5 @@
 import { AiError, errorResponse, generateJson } from "@/lib/ai";
-import { assessSchema, assessSystem, MAX_QUESTIONS } from "@/lib/pothik/prompts";
+import { assessSchema, assessSystem, questionBounds } from "@/lib/pothik/prompts";
 import { badRequest, parseSession } from "@/lib/pothik/request";
 import type { AssessReply } from "@/lib/pothik/types";
 
@@ -14,12 +14,13 @@ const DISTRESS_REPLY = {
 export async function POST(request: Request) {
   const session = parseSession(await request.json().catch(() => null));
   if (!session) return badRequest();
-  const { mode, lang, history } = session;
+  const { mode, lang, history, context } = session;
+  const { max } = questionBounds(Boolean(context.cvText));
   const asked = history.filter((turn) => turn.role === "model").length;
 
   try {
     const reply = await generateJson<Partial<AssessReply>>({
-      system: assessSystem(mode, lang, asked),
+      system: assessSystem(mode, lang, asked, context),
       // The model needs a user turn to start; the opener is never shown in the UI.
       turns: [{ role: "user", text: "Hi, I am ready to start." }, ...history],
       schema: assessSchema,
@@ -27,7 +28,7 @@ export async function POST(request: Request) {
     const message = typeof reply.message === "string" ? reply.message.trim() : "";
     if (!message) throw new AiError("The AI sent an empty answer. Try again.");
     // Hard stop at the question limit even if the model wants to keep going.
-    const done = (reply.done === true || asked >= MAX_QUESTIONS) && reply.distress !== true;
+    const done = (reply.done === true || asked >= max) && reply.distress !== true;
     const distress = reply.distress === true;
     return Response.json({
       message: distress ? DISTRESS_REPLY[lang] : message,

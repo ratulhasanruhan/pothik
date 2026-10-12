@@ -9,7 +9,7 @@ import { normalizeResult } from "@/lib/pothik/result";
 export async function POST(request: Request) {
   const session = parseSession(await request.json().catch(() => null));
   if (!session || session.history.length === 0) return badRequest();
-  const { mode, lang, history } = session;
+  const { mode, lang, history, context } = session;
 
   const transcript = history
     .map((turn) => `${turn.role === "model" ? "Pothik" : "User"}: ${turn.text}`)
@@ -21,13 +21,13 @@ export async function POST(request: Request) {
   try {
     const [core, ...roadmap] = await Promise.all([
       generateJson<Record<string, unknown>>({
-        system: analyzeSystem(mode, lang),
+        system: analyzeSystem(mode, lang, context),
         turns: turns("Write my career review now."),
         schema: coreSchema,
       }),
       ...[0, 1, 2].map((phase) =>
         generateJson<unknown>({
-          system: phaseSystem(mode, lang, phase),
+          system: phaseSystem(mode, lang, phase, context),
           turns: turns(`Write phase ${phase + 1} of my 90-day roadmap now.`),
           schema: phaseSchema,
         }),

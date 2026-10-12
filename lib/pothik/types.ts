@@ -70,3 +70,40 @@ export interface Result {
   /** Focus mode: general productivity tips (not medical advice). */
   stayOnTrackTips: string[];
 }
+
+/** Optional context the user gives before the chat. */
+export interface UserContext {
+  /** The role they are applying for, e.g. "Junior Data Analyst at bKash". */
+  targetRole: string;
+  /** Plain text read from their CV (kept in the browser tab only). */
+  cvText: string;
+}
+
+/** Who the CV belongs to, shown as a small profile header. */
+export interface CvProfile {
+  name: string;
+  headline: string;
+  currentTitle: string;
+  skills: string[];
+}
+
+/** CV scanner output. */
+export interface CvScan {
+  profile: CvProfile;
+  /** 0–100 against the target role (or entry-level roles in general). */
+  score: number;
+  strengths: string[];
+  missing: string[];
+  rewrites: { before: string; after: string }[];
+  atsTips: string[];
+}
+
+/** CV ↔ job description match. */
+export interface JobMatch {
+  matchPercent: number;
+  verdict: string;
+  matched: string[];
+  missing: string[];
+  changes: string[];
+  coverNote: string;
+}
