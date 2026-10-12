@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { GoalPicker } from "@/components/goal-picker";
 import { useProgress } from "@/components/progress-context";
 import { contentFor } from "@/lib/node-content";
@@ -11,20 +11,19 @@ interface ChatLine {
   content: string;
 }
 
+const subscribeNever = () => () => {};
+
 export function BotScreen() {
   const params = useSearchParams();
   const { role, progress, store } = useProgress();
-  const [ready, setReady] = useState(false);
+  // False on the server and while hydrating, true after mount, so both renders match.
+  const mounted = useSyncExternalStore(subscribeNever, () => true, () => false);
   const [lines, setLines] = useState<ChatLine[]>([]);
   const [draft, setDraft] = useState("");
   const [pending, setPending] = useState(false);
   const [source, setSource] = useState<"map" | "ai" | null>(null);
 
-  useEffect(() => {
-    setReady(true);
-  }, []);
-
-  if (!ready) return <p className="text-muted">Loading the bot…</p>;
+  if (!mounted) return <p className="text-muted">Loading the bot…</p>;
   if (!role || !progress) {
     return (
       <div className="flex flex-col gap-8">
