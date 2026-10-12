@@ -1,28 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { MAX_QUESTIONS } from "@/lib/pothik/prompts";
+import { questionBounds } from "@/lib/pothik/prompts";
 import type { AssessReply, Message, Result } from "@/lib/pothik/types";
+import { postJson } from "./api";
+import { ProfileBadge } from "./profile-badge";
 import { useSession } from "./session";
 
 type Status = "idle" | "asking" | "analysing";
-
-/** Posts JSON and returns the parsed body, throwing the server's message on failure. */
-async function postJson<T>(url: string, body: unknown, fallback: string): Promise<T> {
-  let response: Response;
-  try {
-    response = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-  } catch {
-    throw new Error(fallback);
-  }
-  const data = (await response.json().catch(() => ({}))) as T & { error?: string };
-  if (!response.ok) throw new Error(data.error ?? fallback);
-  return data;
-}
 
 /** Chat-style assessment: the AI asks one adaptive question at a time. */
 export function Assessment() {
@@ -42,6 +27,9 @@ export function Assessment() {
   const asked = messages.filter((m) => m.role === "model").length;
   const answered = messages.filter((m) => m.role === "user").length;
   const history = (list: Message[]) => list.map(({ role, text }) => ({ role, text }));
+  const targetRole = chat?.context.targetRole ?? "";
+  const cvText = chat?.context.cvText ?? "";
+  const MAX_QUESTIONS = questionBounds(Boolean(cvText)).max;
 
   // Builds the final review once the questions are done.
   const analyse = useCallback(
@@ -51,7 +39,7 @@ export function Assessment() {
       try {
         const result = await postJson<Result>(
           "/api/analyze",
-          { mode, lang, history: history(list) },
+          { mode, lang, history: history(list), targetRole, cvText },
           t.errorGeneric,
         );
         savePlan(result);
@@ -60,7 +48,7 @@ export function Assessment() {
         setStatus("idle");
       }
     },
-    [mode, lang, savePlan, t.errorGeneric],
+    [mode, lang, targetRole, cvText, savePlan, t.errorGeneric],
   );
 
   // Asks the AI for the next question given the conversation so far.
@@ -72,7 +60,7 @@ export function Assessment() {
       try {
         const reply = await postJson<AssessReply>(
           "/api/assess",
-          { mode, lang, history: history(list) },
+          { mode, lang, history: history(list), targetRole, cvText },
           t.errorGeneric,
         );
         const next: Message[] = [...list, { role: "model", text: reply.message }];
@@ -87,7 +75,7 @@ export function Assessment() {
         setStatus("idle");
       }
     },
-    [mode, lang, setMessages, analyse, t.errorGeneric],
+    [mode, lang, targetRole, cvText, setMessages, analyse, t.errorGeneric],
   );
 
   // First question on a fresh chat; resume analysis after a reload.
@@ -137,6 +125,7 @@ export function Assessment() {
 
   return (
     <div className="flex flex-col gap-4">
+      <ProfileBadge />
       {/* Progress indicator */}
       <div>
         <div className="flex justify-between text-sm text-muted">

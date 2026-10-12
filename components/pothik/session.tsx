@@ -2,16 +2,18 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { strings, type Strings } from "@/lib/pothik/i18n";
-import type { Lang, Message, Mode, Result } from "@/lib/pothik/types";
+import type { CvScan, Lang, Message, Mode, Result, UserContext } from "@/lib/pothik/types";
 
 // Privacy model:
 // - Preferences (language, theme, reduce distractions) live in localStorage.
-// - The conversation lives in sessionStorage only, so it disappears with the tab.
+// - The conversation, CV text, CV scan and photo live in sessionStorage only,
+//   so they disappear with the tab.
 // - The finished plan and its checklist live in localStorage so progress can be
 //   tracked across days. "Start over" wipes both.
 const PREFS_KEY = "pothik-prefs-v1";
 const CHAT_KEY = "pothik-chat-v1";
 const PLAN_KEY = "pothik-plan-v1";
+const PHOTO_KEY = "pothik-photo-v1";
 
 export type Theme = "light" | "dark";
 
@@ -32,7 +34,11 @@ interface Chat {
   mode: Mode;
   messages: Message[];
   finished: boolean;
+  context: UserContext;
+  scan: CvScan | null;
 }
+
+const emptyContext: UserContext = { targetRole: "", cvText: "" };
 
 interface SessionValue extends Prefs {
   ready: boolean;
@@ -42,7 +48,9 @@ interface SessionValue extends Prefs {
   setLang: (lang: Lang) => void;
   setTheme: (theme: Theme) => void;
   setCalm: (calm: boolean) => void;
-  startChat: (mode: Mode) => void;
+  photo: string | null;
+  setPhoto: (photo: string | null) => void;
+  startChat: (mode: Mode, context?: UserContext, scan?: CvScan | null) => void;
   setMessages: (messages: Message[], finished?: boolean) => void;
   savePlan: (result: Result) => void;
   toggleTask: (key: string) => void;
@@ -77,6 +85,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [prefs, setPrefs] = useState<Prefs>({ lang: "en", theme: "light", calm: false });
   const [chat, setChat] = useState<Chat | null>(null);
   const [plan, setPlan] = useState<Plan | null>(null);
+  const [photo, setPhotoState] = useState<string | null>(null);
 
   // Load saved state once on mount (storage is not available during SSR).
   useEffect(() => {
@@ -88,7 +97,10 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       theme: saved?.theme === "dark" || (!saved?.theme && systemDark) ? "dark" : "light",
       calm: saved?.calm === true,
     });
-    setChat(read<Chat>(session, CHAT_KEY));
+    const savedChat = read<Chat>(session, CHAT_KEY);
+    // Chats saved before CV support have no context; fill in defaults.
+    setChat(savedChat ? { ...savedChat, context: savedChat.context ?? emptyContext, scan: savedChat.scan ?? null } : null);
+    setPhotoState(read<string>(session, PHOTO_KEY));
     setPlan(read<Plan>(local, PLAN_KEY));
     setReady(true);
     /* eslint-enable react-hooks/set-state-in-effect */
@@ -124,9 +136,14 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       setLang: (lang) => setPrefs((p) => ({ ...p, lang })),
       setTheme: (theme) => setPrefs((p) => ({ ...p, theme })),
       setCalm: (calm) => setPrefs((p) => ({ ...p, calm })),
-      startChat: (mode) => {
+      photo,
+      setPhoto: (next) => {
+        setPhotoState(next);
+        write(session, PHOTO_KEY, next);
+      },
+      startChat: (mode, context = emptyContext, scan = null) => {
         updatePlan(null);
-        updateChat({ mode, messages: [], finished: false });
+        updateChat({ mode, messages: [], finished: false, context, scan });
       },
       setMessages: (messages, finished = false) => {
         if (chat) updateChat({ ...chat, messages, finished });
@@ -144,9 +161,11 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       reset: () => {
         updateChat(null);
         updatePlan(null);
+        setPhotoState(null);
+        write(session, PHOTO_KEY, null);
       },
     }),
-    [prefs, ready, chat, plan, updateChat, updatePlan],
+    [prefs, ready, chat, plan, photo, updateChat, updatePlan],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

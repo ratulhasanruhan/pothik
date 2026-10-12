@@ -4,6 +4,8 @@ import { useState } from "react";
 import type { Strings } from "@/lib/pothik/i18n";
 import { googleSearchUrl, PLATFORM_HOMES } from "@/lib/pothik/platforms";
 import type { Result, RoadmapTask } from "@/lib/pothik/types";
+import { CvCheckCard, JobMatchCard } from "./cv-cards";
+import { ProfileBadge } from "./profile-badge";
 import { useSession } from "./session";
 
 interface FlatTask extends RoadmapTask {
@@ -26,9 +28,18 @@ function flatten(result: Result): FlatTask[] {
   return tasks;
 }
 
+/** Text describing the candidate for the job match when no CV was uploaded. */
+function candidateFromReview(result: Result) {
+  return [
+    `Profile: ${result.profileSummary}`,
+    `Skills shown: ${result.skillGap.have.join(", ")}`,
+    `Career interests: ${result.careerPaths.map((path) => path.title).join(", ")}`,
+  ].join("\n");
+}
+
 /** The structured career review, rendered as cards. */
 export function Results() {
-  const { t, plan, toggleTask, reset } = useSession();
+  const { t, plan, chat, toggleTask, reset } = useSession();
   const [weekOneOnly, setWeekOneOnly] = useState(plan?.mode === "focus");
   if (!plan) return null;
 
@@ -41,9 +52,13 @@ export function Results() {
   const visibleDone = visible.filter((task) => done.has(task.key)).length;
   const today = visible.find((task) => !done.has(task.key)) ?? null;
   const textSize = focus ? "text-lg leading-8" : "leading-7";
+  // CV data lives in the tab session; it is gone after the tab closes, the plan is not.
+  const cvText = chat?.context.cvText ?? "";
+  const scan = chat?.scan ?? null;
 
   return (
     <div className={`flex flex-col gap-6 ${focus ? "gap-8" : ""}`}>
+      <ProfileBadge />
       {focus ? (
         <TodayCard t={t} task={today} onDone={(key) => toggleTask(key)} allDone={visible.length > 0 && !today} />
       ) : null}
@@ -104,6 +119,8 @@ export function Results() {
           <SkillList title={t.youNeed} items={result.skillGap.need} tone="need" />
         </div>
       </Card>
+
+      {scan ? <CvCheckCard scan={scan} targetRole={chat?.context.targetRole ?? ""} /> : null}
 
       <section>
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
@@ -215,6 +232,8 @@ export function Results() {
           ))}
         </ul>
       </Card>
+
+      <JobMatchCard candidate={cvText || candidateFromReview(result)} hasCv={Boolean(cvText)} />
 
       {result.jobTips.length > 0 ? (
         <Card title={t.jobTips}>
