@@ -1,3 +1,4 @@
+import { generateJson } from "./ai";
 import { roles } from "./roles";
 import type { RoleId, SkillStatus } from "./types";
 
@@ -15,11 +16,6 @@ export async function personalizeGuide(input: {
   linkedinLimited: boolean;
   cvText: string;
 }): Promise<PersonalizedGuide> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    throw new Error("Add OPENAI_API_KEY to .env.local, then restart the app.");
-  }
-
   const catalog = roles.map((role) => ({
     id: role.id,
     title: role.title,
@@ -44,75 +40,36 @@ export async function personalizeGuide(input: {
     .filter(Boolean)
     .join("\n\n");
 
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: process.env.OPENAI_MODEL ?? "gpt-4o-mini",
-      temperature: 0.2,
-      response_format: {
-        type: "json_schema",
-        json_schema: {
-          name: "career_guide",
-          strict: true,
-          schema: {
+  // Gemini returns the role and one status per node as structured JSON.
+  const parsed = await generateJson<{
+    roleId?: RoleId;
+    note?: string;
+    statuses?: { id?: string; status?: SkillStatus }[];
+  }>({
+    system:
+      "You match a Bangladesh entry-level job seeker to one seeded career map. Mark a skill mastered only when the CV or profile text explicitly shows that skill or a close equivalent. Mark in_progress when they have started it but have no finished example. Otherwise keep defaultStatus. Return a status for every node of the chosen role. The note is one or two sentences about what evidence you used. Do not invent employers, degrees, or skills.",
+    turns: [{ role: "user", text: `Roles:\n${JSON.stringify(catalog)}\n\nEvidence:\n${evidence}` }],
+    schema: {
+      type: "object",
+      required: ["roleId", "statuses", "note"],
+      properties: {
+        roleId: { type: "string", enum: roleIds },
+        note: { type: "string" },
+        statuses: {
+          type: "array",
+          items: {
             type: "object",
-            additionalProperties: false,
-            required: ["roleId", "statuses", "note"],
+            required: ["id", "status"],
             properties: {
-              roleId: { type: "string", enum: roleIds },
-              note: { type: "string" },
-              statuses: {
-                type: "array",
-                items: {
-                  type: "object",
-                  additionalProperties: false,
-                  required: ["id", "status"],
-                  properties: {
-                    id: { type: "string" },
-                    status: { type: "string", enum: ["mastered", "in_progress", "gap"] },
-                  },
-                },
-              },
+              id: { type: "string" },
+              status: { type: "string", enum: ["mastered", "in_progress", "gap"] },
             },
           },
         },
       },
-      messages: [
-        {
-          role: "system",
-          content:
-            "You match a Bangladesh entry-level job seeker to one seeded career map. Mark a skill mastered only when the CV or profile text explicitly shows that skill or a close equivalent. Mark in_progress when they have started it but have no finished example. Otherwise keep defaultStatus. Return a status for every node of the chosen role. The note is one or two sentences about what evidence you used. Do not invent employers, degrees, or skills.",
-        },
-        {
-          role: "user",
-          content: `Roles:\n${JSON.stringify(catalog)}\n\nEvidence:\n${evidence}`,
-        },
-      ],
-    }),
+    },
   });
 
-  if (!response.ok) {
-    if (response.status === 401) {
-      throw new Error("The OpenAI API key was rejected. Check OPENAI_API_KEY in .env.local.");
-    }
-    throw new Error("The guide could not be built. Try again in a moment.");
-  }
-
-  const payload = (await response.json()) as {
-    choices?: { message?: { content?: string } }[];
-  };
-  const content = payload.choices?.[0]?.message?.content;
-  if (!content) throw new Error("The guide could not be built. Try again in a moment.");
-
-  const parsed = JSON.parse(content) as {
-    roleId?: RoleId;
-    note?: string;
-    statuses?: { id?: string; status?: SkillStatus }[];
-  };
   if (!parsed.roleId || !roleIds.includes(parsed.roleId)) {
     throw new Error("The guide could not be built. Try again in a moment.");
   }

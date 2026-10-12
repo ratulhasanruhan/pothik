@@ -1,3 +1,4 @@
+import { errorResponse, AiError } from "@/lib/ai";
 import { personalizeGuide } from "@/lib/personalize";
 import { parseLinkedInUrl } from "@/lib/linkedin-url";
 import { readCvFile, readPublicLinkedIn } from "@/lib/read-profile";
@@ -34,10 +35,10 @@ export async function POST(request: Request) {
     });
     return Response.json(guide);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "The guide could not be built.";
-    const status = message.includes("OPENAI_API_KEY") || message.includes("Upload") || message.includes("CV")
-      ? 400
-      : 502;
-    return Response.json({ error: message }, { status });
+    // CV reading errors are user-facing; Gemini errors carry their own status.
+    if (error instanceof Error && !(error instanceof AiError) && /Upload|CV/.test(error.message)) {
+      return Response.json({ error: error.message }, { status: 400 });
+    }
+    return errorResponse(error);
   }
 }
