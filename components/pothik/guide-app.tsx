@@ -21,7 +21,7 @@ export function GuideApp() {
     <div className="flex min-h-dvh flex-col">
       <Header />
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-6 sm:py-10">{screen}</main>
-      <footer className="no-print border-t border-line px-4 py-4 text-center text-sm text-muted">
+      <footer className="border-t border-line px-4 py-4 text-center text-sm text-muted">
         {t.footer}
       </footer>
     </div>

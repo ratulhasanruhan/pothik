@@ -79,4 +79,16 @@ body {
   body {
     background: white;
   }
+
+  /* Always print with the light palette, even when the app is in dark mode. */
+  .dark {
+    --background: #ffffff;
+    --foreground: #1c1917;
+    --surface: #ffffff;
+    --accent: #0f6e6b;
+    --accent-soft: #e5f2f1;
+    --line: #e4ddd2;
+    --muted: #57534e;
+    color-scheme: light;
+  }
 }
