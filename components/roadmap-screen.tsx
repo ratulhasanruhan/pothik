@@ -67,7 +67,7 @@ export function RoadmapScreen() {
         <div className="rounded-2xl border border-line bg-surface px-4 py-3 text-sm leading-6 text-muted lg:col-span-2">
           {store.guide.analysis}{" "}
           <Link href="/insights" className="text-accent">
-            LinkedIn profile and AI notes
+            AI notes
           </Link>
         </div>
       ) : null}

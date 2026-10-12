@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { GoalPicker } from "@/components/goal-picker";
-import { LinkedInCard } from "@/components/linkedin-card";
 import { useProgress } from "@/components/progress-context";
 import { buildProfile } from "@/lib/profile";
 import { readinessBand, readinessPercent } from "@/lib/readiness";
@@ -11,23 +10,16 @@ export function ProfileScreen() {
   const { hydrated, role, progress, store } = useProgress();
   if (!hydrated) return <p className="text-muted">Loading your profile…</p>;
 
-  const linkedin = store.guide?.linkedin ?? null;
   const matched = role && store.guide?.roleId === role.id ? store.guide : null;
 
   return (
     <div className="flex flex-col gap-8">
-      {linkedin ? <LinkedInCard profile={linkedin} /> : null}
       {role && progress ? (
         <Workbench
           roleTitle={role.title}
           headline={matched?.suggestedHeadline || buildProfile(role, progress.nodeStatus).headline}
           about={matched?.suggestedAbout || buildProfile(role, progress.nodeStatus).about}
-          tags={[
-            ...new Set([
-              ...buildProfile(role, progress.nodeStatus).tags,
-              ...(linkedin?.skills ?? []),
-            ]),
-          ]}
+          tags={buildProfile(role, progress.nodeStatus).tags}
           bullets={buildProfile(role, progress.nodeStatus).bullets}
           drafts={role.nodes
             .filter((node) => progress.nodeStatus[node.id] === "in_progress")

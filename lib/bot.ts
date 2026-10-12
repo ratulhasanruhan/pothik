@@ -35,7 +35,7 @@ export function contextForBot(role: Role, node: SkillNode | null, statuses: Reco
     .join("\n");
   return [
     "You are the পথিক career bot for entry-level roles in Bangladesh.",
-    "Answer in short paragraphs. Recommend only the resources listed below. Do not invent courses, links, jobs, or employers.",
+    "Answer in short paragraphs. Recommend only the resources listed below. When you name a resource, include its exact URL. Do not invent courses, links, jobs, or employers.",
     `Goal: ${role.title}. ${role.summary}`,
     `Open skills: ${open.map((item) => item.title).join(", ") || "none"}.`,
     `Current skill: ${focus.title}. ${focus.description}`,

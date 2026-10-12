@@ -73,12 +73,12 @@ export function HomeScreen() {
         className="mt-8 flex max-w-xl flex-col gap-2 rounded-3xl border-2 border-accent bg-accent-soft px-5 py-5"
       >
         <span className="text-sm font-medium text-accent">ADHD focus</span>
-        <span className="font-display text-3xl leading-tight">Get a focus support score</span>
+        <span className="font-display text-3xl leading-tight">Open the 2-minute room</span>
         <span className="leading-7 text-muted">
-          Six short questions, then messages you can send to HR, a manager, an interviewer, or a recruiter.
+          Keep one sentence on screen, park the extra thoughts, and write the note after a call.
           {store.focusScore !== null ? ` Your last score was ${store.focusScore}/12.` : ""}
         </span>
-        <span className="text-sm font-medium text-accent">Start the score</span>
+        <span className="text-sm font-medium text-accent">Enter the room</span>
       </Link>
       <div className="mt-4 max-w-xl">
         <AdhdToggle />
@@ -139,7 +139,7 @@ export function HomeScreen() {
         <div>
           <h2 className="font-display text-2xl">Start from your profile</h2>
           <p className="mt-2 text-muted">
-            A LinkedIn link is enough to begin. A CV makes the skill colors closer to your experience.
+            A CV or a LinkedIn link shapes the guide and the skill colors.
           </p>
         </div>
         <label className="flex flex-col gap-2">

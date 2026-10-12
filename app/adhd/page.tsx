@@ -1,12 +1,12 @@
 "use client";
 
 import { AppShell } from "@/components/app-shell";
-import { FocusScore } from "@/components/focus-score";
+import { FocusRoom } from "@/components/focus-room";
 
 export default function AdhdPage() {
   return (
     <AppShell>
-      <FocusScore />
+      <FocusRoom />
     </AppShell>
   );
 }

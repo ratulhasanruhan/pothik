@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { GoalPicker } from "@/components/goal-picker";
-import { LinkedInCard } from "@/components/linkedin-card";
 import { StatusMark } from "@/components/status-mark";
 import { useProgress } from "@/components/progress-context";
 import { getRole } from "@/lib/roles";
@@ -15,38 +14,31 @@ export function GuideScreen() {
   if (!guide) {
     return (
       <div className="max-w-xl">
-        <h1 className="font-display text-4xl">No profile yet</h1>
+        <h1 className="font-display text-4xl">No guide yet</h1>
         <p className="mt-3 leading-7 text-muted">
-          Paste a LinkedIn URL on the home page. The public profile and the AI readout show up here.
+          Add a CV or a profile link on the home page. The guide shows up here.
         </p>
         <Link
           href="/"
           className="mt-6 inline-flex min-h-12 items-center rounded-full bg-accent px-5 text-white"
         >
-          Add a profile
+          Start a guide
         </Link>
       </div>
     );
   }
 
   const role = getRole(guide.roleId);
-  const linkedin = guide.linkedin;
 
   return (
     <div className="flex flex-col gap-8">
       <div>
         <p className="text-sm text-muted">Your guide</p>
-        <h1 className="mt-1 font-display text-4xl">
-          {linkedin?.name ? linkedin.name : "Your profile"}
-        </h1>
+        <h1 className="mt-1 font-display text-4xl">Your guide</h1>
         <p className="mt-3 max-w-2xl leading-7 text-muted">
           Suggested goal: {role.title}. Set a goal to open the profile workbench.
         </p>
       </div>
-
-      {linkedin ? <LinkedInCard profile={linkedin} /> : (
-        <p className="leading-7 text-muted">This guide was built from a CV, without a LinkedIn URL.</p>
-      )}
 
       <GoalPicker selected={store.selectedRoleId} />
 

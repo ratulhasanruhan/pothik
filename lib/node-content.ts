@@ -1,3 +1,4 @@
+import { roles } from "./roles";
 import type { SkillNode } from "./types";
 
 export interface LearningResource {
@@ -409,6 +410,90 @@ const content: Record<string, { lesson: string; resources: LearningResource[] }>
     ],
   },
 };
+
+export function normalizeResourceUrl(input: string) {
+  const url = new URL(input);
+  url.hash = "";
+  url.hostname = url.hostname.toLowerCase();
+  if (url.pathname.length > 1) url.pathname = url.pathname.replace(/\/+$/, "");
+  url.search = "";
+  return url.toString();
+}
+
+export function allResources() {
+  const seen = new Set<string>();
+  const list: LearningResource[] = [];
+  const push = (item: LearningResource) => {
+    try {
+      const key = normalizeResourceUrl(item.url);
+      if (seen.has(key)) return;
+      seen.add(key);
+      list.push(item);
+    } catch {
+      return;
+    }
+  };
+  for (const entry of Object.values(content)) {
+    entry.resources.forEach(push);
+  }
+  for (const role of roles) {
+    for (const node of role.nodes) {
+      if (!node.course) continue;
+      push({
+        title: node.course.title,
+        kind: "Course",
+        summary: node.course.summary,
+        url: node.course.url,
+      });
+    }
+  }
+  return list;
+}
+
+export function resourceForUrl(input: string) {
+  try {
+    const key = normalizeResourceUrl(input);
+    return allResources().find((item) => normalizeResourceUrl(item.url) === key) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export function previewUrls(text: string, resources: LearningResource[]) {
+  const urls = extractUrls(text);
+  const seen = new Set(urls);
+  const lower = text.toLowerCase();
+  for (const item of resources) {
+    if (item.title.trim().length < 4 || !lower.includes(item.title.toLowerCase())) continue;
+    try {
+      const key = normalizeResourceUrl(item.url);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      urls.push(key);
+    } catch {
+      continue;
+    }
+  }
+  return urls;
+}
+
+export function extractUrls(text: string) {
+  const found = text.match(/https?:\/\/[^\s<>"']+/g) ?? [];
+  const seen = new Set<string>();
+  const urls: string[] = [];
+  for (const raw of found) {
+    const trimmed = raw.replace(/[),.;:]+$/g, "");
+    try {
+      const key = normalizeResourceUrl(trimmed);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      urls.push(key);
+    } catch {
+      continue;
+    }
+  }
+  return urls;
+}
 
 export function contentFor(node: SkillNode) {
   const entry = content[node.id];

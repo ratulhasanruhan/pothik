@@ -34,7 +34,7 @@ export function AdhdToggle({ compact = false }: { compact?: boolean }) {
       <span>
         <span className="mt-1 block font-display text-2xl leading-tight">Hide the full map</span>
         <span className={`mt-1 block text-sm leading-6 ${on ? "text-white/90" : "text-muted"}`}>
-          One 2-minute step stays on screen. Your score and the HR messages stay available.
+          One 2-minute step stays on screen. The focus room stays available.
         </span>
       </span>
       <span

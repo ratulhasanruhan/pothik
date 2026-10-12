@@ -4,7 +4,8 @@ import { useSearchParams } from "next/navigation";
 import { useState, useSyncExternalStore } from "react";
 import { GoalPicker } from "@/components/goal-picker";
 import { useProgress } from "@/components/progress-context";
-import { contentFor } from "@/lib/node-content";
+import { LinkPreview } from "@/components/link-preview";
+import { contentFor, previewUrls } from "@/lib/node-content";
 
 interface ChatLine {
   role: "user" | "assistant";
@@ -82,10 +83,7 @@ export function BotScreen() {
         <ul className="mt-4 flex flex-col gap-3">
           {content.resources.map((item) => (
             <li key={item.url}>
-              <a href={item.url} target="_blank" rel="noreferrer" className="text-accent">
-                {item.title}
-              </a>
-              <p className="text-sm leading-6 text-muted">{item.kind}. {item.summary}</p>
+              <LinkPreview url={item.url} />
             </li>
           ))}
         </ul>
@@ -113,14 +111,17 @@ export function BotScreen() {
             </div>
           ) : (
             lines.map((line, index) => (
-              <p
+              <div
                 key={`${line.role}-${index}`}
-                className={`max-w-[40rem] whitespace-pre-wrap rounded-2xl px-4 py-3 leading-7 ${
+                className={`max-w-[40rem] rounded-2xl px-4 py-3 leading-7 ${
                   line.role === "user" ? "ml-auto bg-accent-soft" : "bg-background"
                 }`}
               >
-                {line.content}
-              </p>
+                <MessageText content={line.content} />
+                {line.role === "assistant"
+                  ? previewUrls(line.content, content.resources).map((url) => <LinkPreview key={url} url={url} />)
+                  : null}
+              </div>
             ))
           )}
           {pending ? <p className="text-sm text-muted">Reading the map…</p> : null}
@@ -148,5 +149,22 @@ export function BotScreen() {
         </form>
       </section>
     </div>
+  );
+}
+
+function MessageText({ content }: { content: string }) {
+  const parts = content.split(/(https?:\/\/[^\s<>"']+)/g);
+  return (
+    <p className="whitespace-pre-wrap">
+      {parts.map((part, index) => {
+        if (!/^https?:\/\//.test(part)) return <span key={index}>{part}</span>;
+        const href = part.replace(/[),.;:]+$/g, "");
+        return (
+          <a key={index} href={href} target="_blank" rel="noreferrer" className="text-accent">
+            {href}
+          </a>
+        );
+      })}
+    </p>
   );
 }

@@ -6,7 +6,7 @@ import { useProgress } from "@/components/progress-context";
 import { focusBand, focusChoices, focusQuestions } from "@/lib/focus-score";
 import { CommunicationHelp } from "@/components/communication-help";
 
-export function FocusScore() {
+export function FocusScore({ embedded = false }: { embedded?: boolean }) {
   const { hydrated, store, setAdhd, setFocusScore } = useProgress();
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<number[]>([]);
@@ -28,14 +28,18 @@ export function FocusScore() {
   }
 
   return (
-    <div className="mx-auto flex max-w-xl flex-col gap-8">
-      <div>
-        <p className="text-sm font-medium text-accent">ADHD focus</p>
-        <h1 className="mt-2 font-display text-4xl leading-tight">Focus support score</h1>
-        <p className="mt-3 leading-7 text-muted">
-          Six questions about how work feels. You choose the answers. This is not a diagnosis, and it does not ask for medical details.
-        </p>
-      </div>
+    <div className={embedded ? "flex flex-col gap-8" : "mx-auto flex max-w-xl flex-col gap-8"}>
+      {embedded ? (
+        <p className="leading-7 text-muted">This is not a diagnosis, and it does not ask for medical details.</p>
+      ) : (
+        <div>
+          <p className="text-sm font-medium text-accent">ADHD focus</p>
+          <h1 className="mt-2 font-display text-4xl leading-tight">Focus support score</h1>
+          <p className="mt-3 leading-7 text-muted">
+            Six questions about how work feels. You choose the answers. This is not a diagnosis, and it does not ask for medical details.
+          </p>
+        </div>
+      )}
 
       {finished || (saved !== null && answers.length === 0) ? (
         <Result
