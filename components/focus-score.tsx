@@ -1,22 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useProgress } from "@/components/progress-context";
 import { focusBand, focusChoices, focusQuestions } from "@/lib/focus-score";
 import { CommunicationHelp } from "@/components/communication-help";
 
 export function FocusScore() {
   const { hydrated, store, setAdhd, setFocusScore } = useProgress();
-  const [ready, setReady] = useState(false);
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<number[]>([]);
 
-  useEffect(() => {
-    setReady(true);
-  }, []);
-
-  if (!ready || !hydrated) return <p className="text-muted">Loading the focus check…</p>;
+  if (!hydrated) return <p className="text-muted">Loading the focus check…</p>;
   const saved = store.focusScore;
   const finished = answers.length === focusQuestions.length;
   const score = finished ? answers.reduce((sum, points) => sum + points, 0) : saved;

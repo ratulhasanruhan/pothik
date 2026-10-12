@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { createContext, useContext, useMemo, useSyncExternalStore } from "react";
 import { getRole } from "@/lib/roles";
 import {
   emptyStore,
@@ -62,19 +62,19 @@ interface ProgressValue {
 
 const ProgressContext = createContext<ProgressValue | null>(null);
 
+const subscribeNever = () => () => {};
+
 export function ProgressProvider({ children }: { children: React.ReactNode }) {
   const live = useSyncExternalStore(subscribe, getClientStore, () => serverStore);
-  const [ready, setReady] = useState(false);
-  useEffect(() => {
-    setReady(true);
-  }, []);
-  const store = ready ? live : serverStore;
+  // False on the server and while hydrating, so saved progress cannot mismatch the HTML.
+  const mounted = useSyncExternalStore(subscribeNever, () => true, () => false);
+  const store = mounted ? live : serverStore;
 
   const value = useMemo<ProgressValue>(() => {
     const role = store.selectedRoleId ? getRole(store.selectedRoleId) : null;
     const progress = store.selectedRoleId ? (store.roles[store.selectedRoleId] ?? null) : null;
     return {
-      hydrated: ready,
+      hydrated: mounted,
       store,
       role,
       progress,
@@ -173,7 +173,7 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
         });
       },
     };
-  }, [store, ready]);
+  }, [store, mounted]);
 
   return <ProgressContext.Provider value={value}>{children}</ProgressContext.Provider>;
 }
