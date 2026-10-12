@@ -62,8 +62,8 @@
   --color-mastered: var(--mastered);
   --color-progress: var(--progress);
   --color-gap: var(--gap);
-  --font-sans: var(--font-source-sans), sans-serif;
-  --font-display: var(--font-fraunces), Georgia, serif;
+  --font-sans: var(--font-source-sans), var(--font-bengali, "Noto Sans Bengali"), sans-serif;
+  --font-display: var(--font-fraunces), var(--font-bengali, "Noto Sans Bengali"), Georgia, serif;
 }
 
 body {

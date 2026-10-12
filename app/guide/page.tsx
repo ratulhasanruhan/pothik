@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 
 export default function GuidePage() {
   return (
-    <div className={bengali.variable} style={{ fontFamily: "var(--font-sans), var(--font-bengali)" }}>
+    <div className={`${bengali.variable} font-sans`}>
       <SessionProvider>
         <GuideApp />
       </SessionProvider>

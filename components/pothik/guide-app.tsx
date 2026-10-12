@@ -36,7 +36,7 @@ function Header() {
     <header className="no-print border-b border-line bg-surface">
       <div className="mx-auto flex w-full max-w-3xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
         <Link href="/guide" className="flex items-center gap-2" aria-label={t.appName}>
-          <Image src="/pothik-logo.png" alt="" width={40} height={40} className="size-10" />
+          <Image src="/pothik-logo.png" alt="" width={40} height={40} className="size-10 rounded-full dark:bg-white" />
           <span className="font-display text-xl">{t.appName}</span>
         </Link>
         <div className="ml-auto flex flex-wrap items-center gap-2">
