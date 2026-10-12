@@ -1,0 +1,129 @@
+"use client";
+
+import { useState } from "react";
+import { useProgress } from "@/components/progress-context";
+import { buildProfile } from "@/lib/profile";
+import { readinessBand, readinessPercent } from "@/lib/readiness";
+
+export function ProfileScreen() {
+  const { role, progress } = useProgress();
+  if (!role || !progress) return null;
+  const profile = buildProfile(role, progress.nodeStatus);
+  const percent = readinessPercent(role, progress.nodeStatus);
+
+  return (
+    <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_18rem]">
+      <article className="rounded-3xl border border-line bg-surface px-6 py-8">
+        <p className="text-sm text-muted">Profile workbench</p>
+        <h1 className="mt-2 font-display text-3xl">{role.title}</h1>
+        <section className="mt-8">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-sm text-muted">LinkedIn headline</h2>
+            <CopyButton text={profile.headline} />
+          </div>
+          <p className="mt-2 text-lg leading-7">{profile.headline}</p>
+        </section>
+        <section className="mt-8">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-sm text-muted">About</h2>
+            <CopyButton text={profile.about} />
+          </div>
+          <p className="mt-2 leading-7">{profile.about}</p>
+        </section>
+        <section className="mt-8">
+          <h2 className="text-sm text-muted">Skill tags</h2>
+          {profile.tags.length ? (
+            <ul className="mt-3 flex flex-wrap gap-2">
+              {profile.tags.map((tag) => (
+                <li key={tag} className="rounded-full bg-accent-soft px-3 py-2 text-sm text-accent">
+                  {tag}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-2 text-muted">Tags appear as skills leave the gap column.</p>
+          )}
+        </section>
+        <section className="mt-8">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-sm text-muted">CV bullets</h2>
+            {profile.bullets.length ? <CopyButton text={profile.bullets.map((bullet) => `• ${bullet}`).join("\n")} /> : null}
+          </div>
+          {profile.bullets.length ? (
+            <ul className="mt-3 flex flex-col gap-3">
+              {profile.bullets.map((bullet) => (
+                <li key={bullet} className="leading-7">
+                  {bullet}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-2 text-muted">Master a skill to unlock its CV bullet.</p>
+          )}
+        </section>
+        <button
+          type="button"
+          onClick={() => window.print()}
+          className="no-print mt-8 inline-flex min-h-12 items-center rounded-full bg-accent px-5 text-white"
+        >
+          Download PDF
+        </button>
+      </article>
+      <aside className="no-print h-fit rounded-3xl border border-line bg-surface px-5 py-6">
+        <p className="text-sm text-muted">Internship readiness</p>
+        <p className="mt-2 font-display text-5xl">{percent}%</p>
+        <div className="mt-4 h-2 overflow-hidden rounded-full bg-background">
+          <div className="h-full bg-accent" style={{ width: `${percent}%` }} />
+        </div>
+        <p className="mt-4 leading-6">{readinessBand(percent)}</p>
+        <dl className="mt-6 flex flex-col gap-4 text-sm leading-6">
+          <div>
+            <dt className="text-muted">GP internships</dt>
+            <dd>{role.readinessNotes.gp}</dd>
+          </div>
+          <div>
+            <dt className="text-muted">GP Accelerator</dt>
+            <dd>{role.readinessNotes.accelerator}</dd>
+          </div>
+          <div>
+            <dt className="text-muted">Corporate partners</dt>
+            <dd>{role.readinessNotes.partners}</dd>
+          </div>
+        </dl>
+      </aside>
+    </div>
+  );
+}
+
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+
+  return (
+    <button
+      type="button"
+      className="no-print inline-flex min-h-11 items-center rounded-full border border-line px-4 text-sm"
+      onClick={() => {
+        const fallback = () => {
+          const area = document.createElement("textarea");
+          area.value = text;
+          area.setAttribute("readonly", "");
+          area.style.position = "fixed";
+          area.style.left = "-9999px";
+          document.body.appendChild(area);
+          area.select();
+          document.execCommand("copy");
+          area.remove();
+        };
+        if (navigator.clipboard?.writeText) {
+          void navigator.clipboard.writeText(text).catch(fallback);
+        } else {
+          fallback();
+        }
+        setCopied(true);
+        window.setTimeout(() => setCopied(false), 1500);
+      }}
+    >
+      {copied ? "Copied" : "Copy"}
+    </button>
+  );
+}
