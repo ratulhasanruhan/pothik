@@ -9,7 +9,7 @@ import {
   saveStore,
   touchStreak,
 } from "@/lib/storage";
-import type { Role, RoleId, RoleProgress, SkillStatus, Store } from "@/lib/types";
+import type { CareerGuide, Role, RoleId, RoleProgress, SkillStatus, Store } from "@/lib/types";
 
 const serverStore = emptyStore();
 const listeners = new Set<() => void>();
@@ -51,10 +51,12 @@ interface ProgressValue {
   role: Role | null;
   progress: RoleProgress | null;
   selectRole: (id: RoleId) => void;
+  setGoal: (id: RoleId) => void;
   setStatus: (nodeId: string, status: SkillStatus) => void;
   toggleStep: (nodeId: string, stepId: string, done: boolean) => void;
   resetRole: (id: RoleId) => void;
-  applyGuide: (roleId: RoleId, statuses: Record<string, SkillStatus>, note: string) => void;
+  applyGuide: (guide: CareerGuide) => void;
+  setAdhd: (on: boolean) => void;
 }
 
 const ProgressContext = createContext<ProgressValue | null>(null);
@@ -75,28 +77,52 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
         commit({
           ...current,
           selectedRoleId: id,
-          note: null,
+          guide: null,
           roles: {
             ...current.roles,
             [id]: current.roles[id] ?? initialRoleProgress(getRole(id)),
           },
         });
       },
-      applyGuide: (roleId, statuses, note) => {
-        const role = getRole(roleId);
-        const progress = initialRoleProgress(role);
-        for (const node of role.nodes) {
-          const status = statuses[node.id];
+      setGoal: (id) => {
+        const current = getClientStore();
+        const selected = getRole(id);
+        const progress = initialRoleProgress(selected);
+        if (current.guide?.roleId === id) {
+          for (const node of selected.nodes) {
+            const status = current.guide.statuses[node.id];
+            if (status === "mastered" || status === "in_progress" || status === "gap") {
+              progress.nodeStatus[node.id] = status;
+            }
+          }
+        } else if (current.roles[id]) {
+          commit({ ...current, selectedRoleId: id });
+          return;
+        }
+        commit({
+          ...current,
+          selectedRoleId: id,
+          roles: { ...current.roles, [id]: progress },
+        });
+      },
+      applyGuide: (guide) => {
+        const current = getClientStore();
+        if (current.selectedRoleId !== guide.roleId) {
+          commit({ ...current, guide });
+          return;
+        }
+        const selected = getRole(guide.roleId);
+        const progress = initialRoleProgress(selected);
+        for (const node of selected.nodes) {
+          const status = guide.statuses[node.id];
           if (status === "mastered" || status === "in_progress" || status === "gap") {
             progress.nodeStatus[node.id] = status;
           }
         }
-        const current = getClientStore();
         commit({
           ...current,
-          selectedRoleId: roleId,
-          note,
-          roles: { ...current.roles, [roleId]: progress },
+          guide,
+          roles: { ...current.roles, [guide.roleId]: progress },
         });
       },
       setStatus: (nodeId, status) => {
@@ -124,11 +150,15 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
           commit({ ...current, streak: touchStreak(current.streak) });
         }
       },
+      setAdhd: (on) => {
+        const current = getClientStore();
+        commit({ ...current, adhdMode: on });
+      },
       resetRole: (id) => {
         const current = getClientStore();
         commit({
           ...current,
-          note: current.selectedRoleId === id ? null : current.note,
+          guide: current.selectedRoleId === id ? null : current.guide,
           roles: { ...current.roles, [id]: initialRoleProgress(getRole(id)) },
         });
       },

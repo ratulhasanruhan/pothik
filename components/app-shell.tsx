@@ -3,13 +3,16 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { AdhdToggle } from "@/components/adhd-toggle";
 import { Logo } from "@/components/logo";
 import { useProgress } from "@/components/progress-context";
 import { readinessPercent } from "@/lib/readiness";
 
 const links = [
+  { href: "/guide", label: "Guide" },
   { href: "/roadmap", label: "Roadmap" },
   { href: "/focus", label: "Focus" },
+  { href: "/bot", label: "Bot" },
   { href: "/profile", label: "Profile" },
 ];
 
@@ -18,6 +21,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { role, progress, store } = useProgress();
   const percent = role && progress ? readinessPercent(role, progress.nodeStatus) : 0;
   const streak = store.streak.count;
+  const visibleLinks = store.adhdMode ? links.filter((link) => link.href !== "/roadmap") : links;
 
   return (
     <div className="min-h-full">
@@ -25,9 +29,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-2 px-4 py-4 sm:flex-row sm:items-center sm:gap-6">
           <Logo />
           <p className="text-sm text-muted sm:min-w-0 sm:flex-1">
-            {role ? role.title : "Pick a role to begin"}
+            {role ? role.title : "Set a goal"}
           </p>
-          <div className="flex gap-4">
+          <div className="flex flex-wrap items-center gap-4">
+            <AdhdToggle compact />
             <p className="text-sm text-foreground">
               <span className="text-muted">Readiness </span>
               {role ? `${percent}%` : "—"}
@@ -39,7 +44,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
         <nav className="mx-auto flex w-full max-w-6xl gap-2 px-4 pb-4">
-          {links.map((link) => {
+          {visibleLinks.map((link) => {
             const active = pathname === link.href;
             return (
               <Link
@@ -70,6 +75,21 @@ export function RequireRole({ children }: { children: React.ReactNode }) {
 
   if (!hydrated || !role) {
     return <p className="text-muted">Loading your map…</p>;
+  }
+
+  return children;
+}
+
+export function QuietRoute({ children }: { children: React.ReactNode }) {
+  const { hydrated, store } = useProgress();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (hydrated && store.adhdMode) router.replace("/focus");
+  }, [hydrated, store.adhdMode, router]);
+
+  if (!hydrated || store.adhdMode) {
+    return <p className="text-muted">Opening the one step…</p>;
   }
 
   return children;

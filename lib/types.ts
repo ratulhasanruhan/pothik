@@ -51,9 +51,47 @@ export interface Streak {
   lastActiveDate: string | null;
 }
 
+export interface LinkedInExperience {
+  role: string;
+  organization: string;
+  time: string;
+}
+
+export interface LinkedInEducation {
+  school: string;
+  detail: string;
+}
+
+export interface LinkedInProfile {
+  url: string;
+  name: string;
+  headline: string;
+  location: string;
+  about: string;
+  experiences: LinkedInExperience[];
+  education: LinkedInEducation[];
+  skills: string[];
+  photoUrl: string;
+  limited: boolean;
+}
+
+export interface CareerGuide {
+  roleId: RoleId;
+  statuses: Record<string, SkillStatus>;
+  reasons: Record<string, string>;
+  analysis: string;
+  strengths: string[];
+  gaps: string[];
+  nextStep: string;
+  suggestedHeadline: string;
+  suggestedAbout: string;
+  linkedin: LinkedInProfile | null;
+}
+
 export interface Store {
   selectedRoleId: RoleId | null;
   roles: Partial<Record<RoleId, RoleProgress>>;
   streak: Streak;
-  note: string | null;
+  guide: CareerGuide | null;
+  adhdMode: boolean;
 }

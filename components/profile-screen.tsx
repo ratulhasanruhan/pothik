@@ -1,40 +1,99 @@
 "use client";
 
 import { useState } from "react";
+import { GoalPicker } from "@/components/goal-picker";
+import { LinkedInCard } from "@/components/linkedin-card";
 import { useProgress } from "@/components/progress-context";
 import { buildProfile } from "@/lib/profile";
 import { readinessBand, readinessPercent } from "@/lib/readiness";
 
 export function ProfileScreen() {
-  const { role, progress } = useProgress();
-  if (!role || !progress) return null;
-  const profile = buildProfile(role, progress.nodeStatus);
-  const percent = readinessPercent(role, progress.nodeStatus);
+  const { hydrated, role, progress, store } = useProgress();
+  if (!hydrated) return <p className="text-muted">Loading your profile…</p>;
+
+  const linkedin = store.guide?.linkedin ?? null;
+  const matched = role && store.guide?.roleId === role.id ? store.guide : null;
+
+  return (
+    <div className="flex flex-col gap-8">
+      {linkedin ? <LinkedInCard profile={linkedin} /> : null}
+      {role && progress ? (
+        <Workbench
+          roleTitle={role.title}
+          headline={matched?.suggestedHeadline || buildProfile(role, progress.nodeStatus).headline}
+          about={matched?.suggestedAbout || buildProfile(role, progress.nodeStatus).about}
+          tags={[
+            ...new Set([
+              ...buildProfile(role, progress.nodeStatus).tags,
+              ...(linkedin?.skills ?? []),
+            ]),
+          ]}
+          bullets={buildProfile(role, progress.nodeStatus).bullets}
+          drafts={role.nodes
+            .filter((node) => progress.nodeStatus[node.id] === "in_progress")
+            .map((node) => node.resumeBullet)}
+          percent={readinessPercent(role, progress.nodeStatus)}
+          notes={role.readinessNotes}
+        />
+      ) : (
+        <div>
+          <h1 className="font-display text-4xl">Set a goal first</h1>
+          <p className="mt-3 max-w-xl leading-7 text-muted">
+            The workbench opens after you choose the role you are aiming for.
+          </p>
+        </div>
+      )}
+      <GoalPicker selected={store.selectedRoleId} />
+    </div>
+  );
+}
+
+function Workbench({
+  roleTitle,
+  headline,
+  about,
+  tags,
+  bullets,
+  drafts,
+  percent,
+  notes,
+}: {
+  roleTitle: string;
+  headline: string;
+  about: string;
+  tags: string[];
+  bullets: string[];
+  drafts: string[];
+  percent: number;
+  notes: { gp: string; accelerator: string; partners: string };
+}) {
+  const ready = bullets.length ? bullets : drafts;
+  const readyLabel = bullets.length ? "CV bullets" : "Draft bullets for this goal";
 
   return (
     <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_18rem]">
       <article className="rounded-3xl border border-line bg-surface px-6 py-8">
         <p className="text-sm text-muted">Profile workbench</p>
-        <h1 className="mt-2 font-display text-3xl">{role.title}</h1>
+        <h1 className="mt-2 font-display text-3xl">{roleTitle}</h1>
         <section className="mt-8">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-sm text-muted">LinkedIn headline</h2>
-            <CopyButton text={profile.headline} />
+            <CopyButton text={headline} />
           </div>
-          <p className="mt-2 text-lg leading-7">{profile.headline}</p>
+          <p className="mt-2 text-lg leading-7">{headline}</p>
         </section>
         <section className="mt-8">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-sm text-muted">About</h2>
-            <CopyButton text={profile.about} />
+            <CopyButton text={about} />
           </div>
-          <p className="mt-2 leading-7">{profile.about}</p>
+          <p className="mt-2 leading-7">{about}</p>
         </section>
         <section className="mt-8">
           <h2 className="text-sm text-muted">Skill tags</h2>
-          {profile.tags.length ? (
+          {tags.length ? (
             <ul className="mt-3 flex flex-wrap gap-2">
-              {profile.tags.map((tag) => (
+              {tags.map((tag) => (
                 <li key={tag} className="rounded-full bg-accent-soft px-3 py-2 text-sm text-accent">
                   {tag}
                 </li>
@@ -46,12 +105,12 @@ export function ProfileScreen() {
         </section>
         <section className="mt-8">
           <div className="flex items-center justify-between gap-3">
-            <h2 className="text-sm text-muted">CV bullets</h2>
-            {profile.bullets.length ? <CopyButton text={profile.bullets.map((bullet) => `• ${bullet}`).join("\n")} /> : null}
+            <h2 className="text-sm text-muted">{readyLabel}</h2>
+            {ready.length ? <CopyButton text={ready.map((bullet) => `• ${bullet}`).join("\n")} /> : null}
           </div>
-          {profile.bullets.length ? (
+          {ready.length ? (
             <ul className="mt-3 flex flex-col gap-3">
-              {profile.bullets.map((bullet) => (
+              {ready.map((bullet) => (
                 <li key={bullet} className="leading-7">
                   {bullet}
                 </li>
@@ -79,15 +138,15 @@ export function ProfileScreen() {
         <dl className="mt-6 flex flex-col gap-4 text-sm leading-6">
           <div>
             <dt className="text-muted">GP internships</dt>
-            <dd>{role.readinessNotes.gp}</dd>
+            <dd>{notes.gp}</dd>
           </div>
           <div>
             <dt className="text-muted">GP Accelerator</dt>
-            <dd>{role.readinessNotes.accelerator}</dd>
+            <dd>{notes.accelerator}</dd>
           </div>
           <div>
             <dt className="text-muted">Corporate partners</dt>
-            <dd>{role.readinessNotes.partners}</dd>
+            <dd>{notes.partners}</dd>
           </div>
         </dl>
       </aside>

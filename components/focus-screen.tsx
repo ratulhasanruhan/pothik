@@ -1,14 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { useProgress } from "@/components/progress-context";
 import { nextOpenStep, pickActiveNode } from "@/lib/focus";
+import { contentFor } from "@/lib/node-content";
 
 export function FocusScreen() {
+  const router = useRouter();
   const params = useSearchParams();
-  const { role, progress, toggleStep, setStatus } = useProgress();
+  const { role, progress, store, toggleStep, setStatus, setAdhd } = useProgress();
   const [ack, setAck] = useState(false);
   if (!role || !progress) return null;
 
@@ -32,6 +34,7 @@ export function FocusScreen() {
   }
 
   const step = nextOpenStep(node, progress.completedSteps);
+  const resources = contentFor(node).resources;
   const doneCount = node.microSteps.filter((item) => progress.completedSteps.includes(item.id)).length;
 
   function finishStep() {
@@ -52,7 +55,7 @@ export function FocusScreen() {
   return (
     <div className="mx-auto flex max-w-lg flex-col gap-6">
       <div>
-        <p className="text-sm text-muted">Only this skill</p>
+        <p className="text-sm text-muted">{store.adhdMode ? "ADHD focus" : "Only this skill"}</p>
         <h1 className="mt-2 font-display text-4xl leading-tight">{node.title}</h1>
         <p className="mt-3 leading-7 text-muted">{node.description}</p>
       </div>
@@ -85,9 +88,40 @@ export function FocusScreen() {
           </>
         )}
       </div>
-      <Link href="/roadmap" className="text-sm text-accent">
-        Back to the roadmap
+      {resources.length ? (
+        <div>
+          <h2 className="text-sm text-muted">Resources for this skill</h2>
+          <ul className="mt-3 flex flex-col gap-2">
+            {resources.map((item) => (
+              <li key={item.url}>
+                <a href={item.url} target="_blank" rel="noreferrer" className="text-accent">
+                  {item.title}
+                </a>
+                <p className="text-sm leading-6 text-muted">{item.summary}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+      <Link href={`/bot?skill=${node.id}`} className="text-sm text-accent">
+        Ask the bot about this skill
       </Link>
+      {store.adhdMode ? (
+        <button
+          type="button"
+          onClick={() => {
+            setAdhd(false);
+            router.push("/roadmap");
+          }}
+          className="text-left text-sm text-accent"
+        >
+          Show the full map
+        </button>
+      ) : (
+        <Link href="/roadmap" className="text-sm text-accent">
+          Back to the roadmap
+        </Link>
+      )}
     </div>
   );
 }

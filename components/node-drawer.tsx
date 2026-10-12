@@ -3,14 +3,17 @@
 import Link from "next/link";
 import { StatusMark } from "@/components/status-mark";
 import { useProgress } from "@/components/progress-context";
+import { contentFor } from "@/lib/node-content";
 import type { SkillNode, SkillStatus } from "@/lib/types";
 
 const statuses: SkillStatus[] = ["mastered", "in_progress", "gap"];
 
 export function NodeDrawer({ node, onClose }: { node: SkillNode; onClose: () => void }) {
-  const { progress, setStatus, toggleStep } = useProgress();
+  const { progress, store, setStatus, toggleStep } = useProgress();
   if (!progress) return null;
   const status = progress.nodeStatus[node.id] ?? node.defaultStatus;
+  const content = contentFor(node);
+  const reason = store.guide?.reasons[node.id];
   const unlocked = status === "mastered";
 
   return (
@@ -31,6 +34,32 @@ export function NodeDrawer({ node, onClose }: { node: SkillNode; onClose: () => 
       <div className="flex flex-1 flex-col gap-6 overflow-y-auto px-5 py-5">
         <StatusMark status={status} />
         <p className="text-base leading-7">{node.description}</p>
+        <div>
+          <h3 className="text-sm text-muted">What to learn</h3>
+          <p className="mt-2 leading-7">{content.lesson}</p>
+        </div>
+        {content.resources.length ? (
+          <div>
+            <h3 className="text-sm text-muted">Resources</h3>
+            <ul className="mt-3 flex flex-col gap-3">
+              {content.resources.map((item) => (
+                <li key={item.url}>
+                  <a
+                    href={item.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="block rounded-2xl border border-line bg-accent-soft px-4 py-4"
+                  >
+                    <p className="text-sm text-accent">{item.kind}</p>
+                    <p className="mt-1 font-medium">{item.title}</p>
+                    <p className="mt-1 text-sm leading-6 text-muted">{item.summary}</p>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+        {reason ? <p className="leading-7 text-muted">{reason}</p> : null}
         <div className="flex flex-wrap gap-2" role="group" aria-label="Skill status">
           {statuses.map((option) => (
             <button
@@ -67,18 +96,12 @@ export function NodeDrawer({ node, onClose }: { node: SkillNode; onClose: () => 
             })}
           </ul>
         </div>
-        {node.course ? (
-          <a
-            href={node.course.url}
-            target="_blank"
-            rel="noreferrer"
-            className="rounded-2xl border border-line bg-accent-soft px-4 py-4"
-          >
-            <p className="text-sm text-accent">Grameenphone Academy</p>
-            <p className="mt-1 font-medium">{node.course.title}</p>
-            <p className="mt-1 text-sm leading-6 text-muted">{node.course.summary}</p>
-          </a>
-        ) : null}
+        <Link
+          href={`/bot?skill=${node.id}`}
+          className="inline-flex min-h-12 items-center justify-center rounded-full border border-line px-5"
+        >
+          Ask the bot about this skill
+        </Link>
         <div className={unlocked ? "" : "opacity-70"}>
           <h3 className="text-sm text-muted">
             {unlocked ? "CV bullet" : "CV bullet unlocks when this skill is mastered"}

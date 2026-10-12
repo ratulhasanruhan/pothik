@@ -2,17 +2,17 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { AdhdToggle } from "@/components/adhd-toggle";
 import { Logo } from "@/components/logo";
 import { useProgress } from "@/components/progress-context";
 import { parseLinkedInUrl } from "@/lib/linkedin-url";
 import { roles } from "@/lib/roles";
 import { readinessPercent } from "@/lib/readiness";
-import type { PersonalizedGuide } from "@/lib/personalize";
-import type { RoleId } from "@/lib/types";
+import type { CareerGuide, RoleId } from "@/lib/types";
 
 export function HomeScreen() {
   const router = useRouter();
-  const { store, selectRole, resetRole, applyGuide } = useProgress();
+  const { store, setGoal, resetRole, applyGuide } = useProgress();
   const [linkedin, setLinkedin] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [pending, setPending] = useState(false);
@@ -38,13 +38,13 @@ export function HomeScreen() {
     setPending(true);
     try {
       const response = await fetch("/api/personalize", { method: "POST", body });
-      const data = (await response.json()) as PersonalizedGuide & { error?: string };
+      const data = (await response.json()) as CareerGuide & { error?: string };
       if (!response.ok || !data.roleId || !data.statuses) {
         setError(data.error ?? "The guide could not be built.");
         return;
       }
-      applyGuide(data.roleId, data.statuses, data.note);
-      router.push("/roadmap");
+      applyGuide(data);
+      router.push("/guide");
     } catch {
       setError("The guide could not be built. Try again.");
     } finally {
@@ -53,8 +53,8 @@ export function HomeScreen() {
   }
 
   function start(id: RoleId) {
-    selectRole(id);
-    router.push("/roadmap");
+    setGoal(id);
+    router.push("/profile");
   }
 
   return (
@@ -66,6 +66,9 @@ export function HomeScreen() {
       <p className="mt-4 max-w-xl text-lg leading-8 text-muted">
         Paste a LinkedIn URL or upload a CV. The map shows what is mastered, in progress, and still missing.
       </p>
+      <div className="mt-6 max-w-xl">
+        <AdhdToggle />
+      </div>
       {saved && savedProgress ? (
         <div className="mt-8 flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-line bg-surface px-5 py-5">
           <div>
@@ -81,10 +84,10 @@ export function HomeScreen() {
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              onClick={() => router.push("/roadmap")}
+              onClick={() => router.push("/profile")}
               className="inline-flex min-h-12 items-center rounded-full bg-accent px-5 text-white"
             >
-              Open map
+              Open workbench
             </button>
             <button
               type="button"
@@ -131,10 +134,10 @@ export function HomeScreen() {
           disabled={pending}
           className="inline-flex min-h-12 items-center justify-center rounded-full bg-accent px-5 text-white disabled:opacity-70"
         >
-          {pending ? "Building your map…" : "Continue"}
+          {pending ? "Reading your profile…" : "Continue"}
         </button>
       </form>
-      <h2 className="mt-10 font-display text-2xl">Or pick a role</h2>
+      <h2 className="mt-10 font-display text-2xl">Set a goal</h2>
       <div className="mt-4 grid gap-4 md:grid-cols-3">
         {roles.map((role) => (
           <button
@@ -145,7 +148,7 @@ export function HomeScreen() {
           >
             <span className="font-display text-2xl leading-snug">{role.title}</span>
             <span className="mt-3 flex-1 leading-7 text-muted">{role.summary}</span>
-            <span className="mt-4 text-sm text-accent">Open roadmap</span>
+            <span className="mt-4 text-sm text-accent">Set this goal</span>
           </button>
         ))}
       </div>

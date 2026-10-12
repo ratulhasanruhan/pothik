@@ -1,9 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { useLayoutEffect, useRef, useState } from "react";
 import { NodeDrawer } from "@/components/node-drawer";
 import { StatusMark } from "@/components/status-mark";
 import { useProgress } from "@/components/progress-context";
+import { contentFor } from "@/lib/node-content";
 import type { SkillNode } from "@/lib/types";
 
 export function RoadmapScreen() {
@@ -61,10 +63,13 @@ export function RoadmapScreen() {
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
-      {store.note ? (
-        <p className="rounded-2xl border border-line bg-surface px-4 py-3 text-sm leading-6 text-muted lg:col-span-2">
-          {store.note}
-        </p>
+      {store.guide ? (
+        <div className="rounded-2xl border border-line bg-surface px-4 py-3 text-sm leading-6 text-muted lg:col-span-2">
+          {store.guide.analysis}{" "}
+          <Link href="/guide" className="text-accent">
+            LinkedIn profile and AI notes
+          </Link>
+        </div>
       ) : null}
       <div ref={containerRef} className="relative flex flex-col gap-12">
         {paths.length > 0 ? (
@@ -106,7 +111,7 @@ export function RoadmapScreen() {
           </div>
         ) : (
           <div className="rounded-3xl border border-dashed border-line bg-surface px-5 py-8 text-muted">
-            Select a skill to see the 2-minute steps, a Grameenphone Academy course, and the CV bullet.
+            Select a skill to open the lesson, resources, and 2-minute steps.
           </div>
         )}
       </div>
@@ -139,6 +144,11 @@ function SkillButton({
     >
       <StatusMark status={status} />
       <span className="mt-2 block font-medium leading-6">{node.title}</span>
+      <span className="mt-1 block text-sm text-muted">
+        {contentFor(node).resources.length === 1
+          ? "1 resource"
+          : `${contentFor(node).resources.length} resources`}
+      </span>
     </button>
   );
 }

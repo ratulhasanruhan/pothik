@@ -25,13 +25,8 @@ export async function POST(request: Request) {
     const cvText = hasCv ? await readCvFile(cv) : "";
     const linkedin = linkedinUrl
       ? await readPublicLinkedIn(linkedinUrl)
-      : { text: "", limited: false };
-    const guide = await personalizeGuide({
-      linkedinUrl,
-      linkedinText: linkedin.text,
-      linkedinLimited: linkedin.limited,
-      cvText,
-    });
+      : { text: "", limited: false, name: "", headline: "", location: "", about: "", photoUrl: "" };
+    const guide = await personalizeGuide({ linkedinUrl, linkedin, cvText });
     return Response.json(guide);
   } catch (error) {
     const message = error instanceof Error ? error.message : "The guide could not be built.";

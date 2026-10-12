@@ -1,5 +1,15 @@
 import { getRole } from "./roles";
-import type { Role, RoleId, RoleProgress, SkillStatus, Store, Streak } from "./types";
+import { safePhotoUrl } from "./photo-url";
+import type {
+  CareerGuide,
+  LinkedInProfile,
+  Role,
+  RoleId,
+  RoleProgress,
+  SkillStatus,
+  Store,
+  Streak,
+} from "./types";
 
 export const STORAGE_KEY = "focuscareer-v1";
 
@@ -8,7 +18,8 @@ export function emptyStore(): Store {
     selectedRoleId: null,
     roles: {},
     streak: { count: 0, lastActiveDate: null },
-    note: null,
+    guide: null,
+    adhdMode: false,
   };
 }
 
@@ -80,7 +91,90 @@ export function sanitizeStore(value: unknown): Store {
       count: typeof streak?.count === "number" && streak.count >= 0 ? streak.count : 0,
       lastActiveDate: typeof streak?.lastActiveDate === "string" ? streak.lastActiveDate : null,
     },
-    note: typeof raw.note === "string" ? raw.note.slice(0, 400) : null,
+    guide: sanitizeGuide(raw.guide),
+    adhdMode: raw.adhdMode === true,
+  };
+}
+
+function clip(value: unknown, max: number) {
+  return typeof value === "string" ? value.replace(/\s+/g, " ").trim().slice(0, max) : "";
+}
+
+function clipList(value: unknown, maxItems: number, maxLength: number) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => clip(item, maxLength))
+    .filter(Boolean)
+    .slice(0, maxItems);
+}
+
+function sanitizeGuide(value: unknown): CareerGuide | null {
+  if (!value || typeof value !== "object") return null;
+  const raw = value as Partial<CareerGuide>;
+  const roleIds: RoleId[] = ["junior-mobile", "data-analyst", "digital-marketer"];
+  if (!raw.roleId || !roleIds.includes(raw.roleId)) return null;
+  const role = getRole(raw.roleId);
+  const statuses = initialRoleProgress(role).nodeStatus;
+  const reasons: Record<string, string> = {};
+  if (raw.statuses && typeof raw.statuses === "object") {
+    for (const node of role.nodes) {
+      const status = raw.statuses[node.id];
+      if (status === "mastered" || status === "in_progress" || status === "gap") {
+        statuses[node.id] = status;
+      }
+      const reason = clip(raw.reasons?.[node.id], 180);
+      if (reason) reasons[node.id] = reason;
+    }
+  }
+  return {
+    roleId: raw.roleId,
+    statuses,
+    reasons,
+    analysis: clip(raw.analysis, 800),
+    strengths: clipList(raw.strengths, 4, 160),
+    gaps: clipList(raw.gaps, 4, 160),
+    nextStep: clip(raw.nextStep, 240),
+    suggestedHeadline: clip(raw.suggestedHeadline, 220),
+    suggestedAbout: clip(raw.suggestedAbout, 800),
+    linkedin: sanitizeLinkedIn(raw.linkedin),
+  };
+}
+
+function sanitizeLinkedIn(value: unknown): LinkedInProfile | null {
+  if (!value || typeof value !== "object") return null;
+  const raw = value as Partial<LinkedInProfile>;
+  const url = clip(raw.url, 300);
+  if (!url) return null;
+  const experiences = Array.isArray(raw.experiences)
+    ? raw.experiences.slice(0, 4).flatMap((item) => {
+        if (!item || typeof item !== "object") return [];
+        const row = item as Partial<LinkedInProfile["experiences"][number]>;
+        const role = clip(row.role, 120);
+        const organization = clip(row.organization, 120);
+        if (!role && !organization) return [];
+        return [{ role, organization, time: clip(row.time, 80) }];
+      })
+    : [];
+  const education = Array.isArray(raw.education)
+    ? raw.education.slice(0, 3).flatMap((item) => {
+        if (!item || typeof item !== "object") return [];
+        const row = item as Partial<LinkedInProfile["education"][number]>;
+        const school = clip(row.school, 120);
+        if (!school) return [];
+        return [{ school, detail: clip(row.detail, 160) }];
+      })
+    : [];
+  return {
+    url,
+    name: clip(raw.name, 120),
+    headline: clip(raw.headline, 220),
+    location: clip(raw.location, 120),
+    about: clip(raw.about, 800),
+    experiences,
+    education,
+    skills: clipList(raw.skills, 12, 60),
+    photoUrl: safePhotoUrl(clip(raw.photoUrl, 500)),
+    limited: raw.limited === true,
   };
 }
 
