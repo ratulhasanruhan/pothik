@@ -176,10 +176,12 @@ function normalizeGuide(
     }))
     .filter((item) => item.role || item.organization)
     .slice(0, 4);
+  const publicExperiences = input.linkedin.experiences.filter((item) => item.organization || item.role);
   const education = (profile?.education ?? [])
     .map((item) => ({ school: keep(item.school ?? ""), detail: keep(item.detail ?? "") }))
     .filter((item) => item.school)
     .slice(0, 3);
+  const publicEducation = input.linkedin.education.filter((item) => item.school);
   const skills = (profile?.skills ?? []).map((skill) => keep(skill)).filter(Boolean).slice(0, 12);
 
   const linkedin: LinkedInProfile | null = input.linkedinUrl
@@ -189,8 +191,8 @@ function normalizeGuide(
         headline: keep(profile?.headline ?? "") || input.linkedin.headline,
         location: keep(profile?.location ?? "") || input.linkedin.location,
         about: keep(profile?.about ?? "") || keep(input.linkedin.about),
-        experiences,
-        education,
+        experiences: experiences.length ? experiences : publicExperiences,
+        education: education.length ? education : publicEducation,
         skills,
         photoUrl: safePhotoUrl(input.linkedin.photoUrl),
         limited: input.linkedin.limited,

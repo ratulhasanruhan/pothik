@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { GoalPicker } from "@/components/goal-picker";
+import { LinkedInCard } from "@/components/linkedin-card";
 import { StatusMark } from "@/components/status-mark";
 import { useProgress } from "@/components/progress-context";
 import { getRole } from "@/lib/roles";
@@ -29,16 +30,19 @@ export function GuideScreen() {
   }
 
   const role = getRole(guide.roleId);
+  const linkedin = guide.linkedin;
 
   return (
     <div className="flex flex-col gap-8">
       <div>
         <p className="text-sm text-muted">Your guide</p>
-        <h1 className="mt-1 font-display text-4xl">Your guide</h1>
+        <h1 className="mt-1 font-display text-4xl">{linkedin?.name || "Your guide"}</h1>
         <p className="mt-3 max-w-2xl leading-7 text-muted">
           Suggested goal: {role.title}. Set a goal to open the profile workbench.
         </p>
       </div>
+
+      {linkedin ? <LinkedInCard profile={linkedin} /> : null}
 
       <GoalPicker selected={store.selectedRoleId} />
 

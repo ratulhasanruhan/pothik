@@ -36,7 +36,9 @@ export function LinkedInCard({ profile }: { profile: LinkedInProfile }) {
           {profile.experiences.map((item) => (
             <li key={`${item.role}-${item.organization}`}>
               <p className="font-medium">{item.role || item.organization}</p>
-              <p className="text-sm text-muted">{[item.organization, item.time].filter(Boolean).join(" · ")}</p>
+              <p className="text-sm text-muted">
+                {[item.role ? item.organization : "", item.time].filter(Boolean).join(" · ")}
+              </p>
             </li>
           ))}
         </ul>

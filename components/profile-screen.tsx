@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { GoalPicker } from "@/components/goal-picker";
+import { LinkedInCard } from "@/components/linkedin-card";
 import { useProgress } from "@/components/progress-context";
 import { buildProfile } from "@/lib/profile";
 import { readinessBand, readinessPercent } from "@/lib/readiness";
@@ -10,10 +11,12 @@ export function ProfileScreen() {
   const { hydrated, role, progress, store } = useProgress();
   if (!hydrated) return <p className="text-muted">Loading your profile…</p>;
 
+  const linkedin = store.guide?.linkedin ?? null;
   const matched = role && store.guide?.roleId === role.id ? store.guide : null;
 
   return (
     <div className="flex flex-col gap-8">
+      {linkedin ? <LinkedInCard profile={linkedin} /> : null}
       {role && progress ? (
         <Workbench
           roleTitle={role.title}

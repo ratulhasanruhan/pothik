@@ -26,7 +26,17 @@ export async function POST(request: Request) {
     const cvText = hasCv ? await readCvFile(cv) : "";
     const linkedin = linkedinUrl
       ? await readPublicLinkedIn(linkedinUrl)
-      : { text: "", limited: false, name: "", headline: "", location: "", about: "", photoUrl: "" };
+      : {
+          text: "",
+          limited: false,
+          name: "",
+          headline: "",
+          location: "",
+          about: "",
+          photoUrl: "",
+          experiences: [],
+          education: [],
+        };
     const guide = await personalizeGuide({ linkedinUrl, linkedin, cvText });
     return Response.json(guide);
   } catch (error) {

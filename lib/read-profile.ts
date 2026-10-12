@@ -42,6 +42,8 @@ export interface PublicLinkedIn {
   location: string;
   about: string;
   photoUrl: string;
+  experiences: { role: string; organization: string; time: string }[];
+  education: { school: string; detail: string }[];
 }
 
 export async function readPublicLinkedIn(url: string): Promise<PublicLinkedIn> {
@@ -53,6 +55,8 @@ export async function readPublicLinkedIn(url: string): Promise<PublicLinkedIn> {
     location: "",
     about: "",
     photoUrl: "",
+    experiences: [],
+    education: [],
   };
   try {
     const response = await fetch(url, {
@@ -66,33 +70,32 @@ export async function readPublicLinkedIn(url: string): Promise<PublicLinkedIn> {
       signal: AbortSignal.timeout(10000),
     });
     if (!response.ok) return empty;
-    const html = await response.text();
-    const title = meta(html, "og:title") || decode(html.match(/<title>([^<]*)<\/title>/i)?.[1] ?? "");
-    const description = meta(html, "og:description") || meta(html, "description");
-    const image = meta(html, "og:image") || meta(html, "twitter:image");
-    const body = decode(
-      html
-        .replace(/<script[\s\S]*?<\/script>/gi, " ")
-        .replace(/<style[\s\S]*?<\/style>/gi, " ")
-        .replace(/<[^>]+>/g, " ")
-        .replace(/\s+/g, " ")
-        .trim(),
-    );
-    const loginWall = /sign in|join linkedin|authwall/i.test(`${title} ${body}`);
-    const parsed = parseLinkedInHeading(title, description);
-    const text = [title, description, loginWall ? "" : body].filter(Boolean).join("\n").slice(0, 8000);
-    return {
-      text,
-      limited: loginWall || body.length < 500,
-      name: parsed.name,
-      headline: parsed.headline,
-      location: parsed.location,
-      about: loginWall ? "" : description,
-      photoUrl: safePhotoUrl(image),
-    };
+    return readLinkedInHtml(await response.text());
   } catch {
     return empty;
   }
+}
+
+export function readLinkedInHtml(html: string): PublicLinkedIn {
+  const title = meta(html, "og:title") || decode(html.match(/<title>([^<]*)<\/title>/i)?.[1] ?? "");
+  const description = meta(html, "og:description") || meta(html, "description");
+  const image = meta(html, "og:image") || meta(html, "twitter:image");
+  const heading = parseLinkedInHeading(title);
+  const details = parseLinkedInDescription(description);
+  const text = [title, description].filter(Boolean).join("\n").slice(0, 8000);
+  return {
+    text,
+    limited: true,
+    name: heading.name,
+    headline: heading.headline,
+    location: details.location,
+    about: details.about,
+    photoUrl: safePhotoUrl(image),
+    experiences: details.experience
+      ? [{ role: "", organization: details.experience, time: "" }]
+      : [],
+    education: details.education ? [{ school: details.education, detail: "" }] : [],
+  };
 }
 
 function meta(html: string, key: string) {
@@ -108,19 +111,35 @@ function meta(html: string, key: string) {
   return "";
 }
 
-function parseLinkedInHeading(title: string, description: string) {
-  const cleaned = title.replace(/\s*\|\s*LinkedIn\s*$/i, "").trim();
-  if (!cleaned || /sign in|sign up|linkedin/i.test(cleaned)) {
-    return { name: "", headline: "", location: "" };
+function parseLinkedInHeading(title: string) {
+  const cleaned = title.replace(/\s*[|–-]\s*LinkedIn\s*$/i, "").trim();
+  if (!cleaned || /sign in|sign up|authwall/i.test(cleaned)) {
+    return { name: "", headline: "" };
   }
   const [namePart, ...rest] = cleaned.split(/\s+-\s+/);
-  const headline = rest.join(" - ").trim();
-  const location = description.split("·")[0]?.trim() ?? "";
-  return {
-    name: namePart.trim(),
-    headline,
-    location: /linkedin|sign in/i.test(location) ? "" : location,
-  };
+  const name = namePart.trim();
+  if (!name || /linkedin/i.test(name)) return { name: "", headline: "" };
+  return { name, headline: rest.join(" - ").trim() };
+}
+
+function parseLinkedInDescription(description: string) {
+  const location = field(description, "Location");
+  const experience = field(description, "Experience");
+  const education = field(description, "Education");
+  const about = description
+    .split("·")
+    .map((part) => part.trim())
+    .filter((part) => part && !/^(Experience|Education|Location):/i.test(part) && !/connections on LinkedIn/i.test(part))
+    .slice(1)
+    .join(" ")
+    .trim();
+  return { location, experience, education, about };
+}
+
+function field(description: string, label: string) {
+  const match = description.match(new RegExp(`${label}:\\s*([^·|]+)`, "i"));
+  const value = match?.[1]?.replace(/\s+/g, " ").trim() ?? "";
+  return /linkedin|sign in/i.test(value) ? "" : value;
 }
 
 function decode(value: string) {
