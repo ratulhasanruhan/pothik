@@ -15,8 +15,9 @@ const display = Fraunces({
 });
 
 export const metadata: Metadata = {
-  title: "FocusCareer",
+  title: "পথিক",
   description: "A visual career map that turns skill gaps into 2-minute steps.",
+  icons: { icon: "/pothik-logo.png" },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

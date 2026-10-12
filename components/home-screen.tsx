@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Logo } from "@/components/logo";
 import { useProgress } from "@/components/progress-context";
 import { parseLinkedInUrl } from "@/lib/linkedin-url";
 import { roles } from "@/lib/roles";
@@ -58,7 +59,7 @@ export function HomeScreen() {
 
   return (
     <div className="mx-auto flex min-h-full w-full max-w-5xl flex-col px-4 py-10">
-      <p className="text-sm tracking-wide text-accent">FocusCareer</p>
+      <Logo size="hero" />
       <h1 className="mt-3 max-w-xl font-display text-5xl leading-tight">
         A career map you can start in two minutes.
       </h1>

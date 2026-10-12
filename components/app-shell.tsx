@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { Logo } from "@/components/logo";
 import { useProgress } from "@/components/progress-context";
 import { readinessPercent } from "@/lib/readiness";
 
@@ -22,9 +23,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="min-h-full">
       <header className="no-print border-b border-line bg-surface">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-2 px-4 py-4 sm:flex-row sm:items-center sm:gap-6">
-          <Link href="/" className="font-display text-xl text-foreground">
-            FocusCareer
-          </Link>
+          <Logo />
           <p className="text-sm text-muted sm:min-w-0 sm:flex-1">
             {role ? role.title : "Pick a role to begin"}
           </p>
