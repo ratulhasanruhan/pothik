@@ -81,10 +81,10 @@ async function callOpenAI(apiKey: string, request: JsonRequest) {
       body: JSON.stringify({
         model: OPENAI_MODEL,
         temperature: 0.4,
-        // Non-strict schema so optional fields and free-form objects are allowed.
+        // Strict mode makes OpenAI follow the schema exactly.
         response_format: {
           type: "json_schema",
-          json_schema: { name: "pothik_response", strict: false, schema: request.schema },
+          json_schema: { name: "pothik_response", strict: true, schema: strictSchema(request.schema) },
         },
         messages: [
           { role: "system", content: request.system },
@@ -104,6 +104,19 @@ async function callOpenAI(apiKey: string, request: JsonRequest) {
   return payload.choices?.[0]?.message?.content;
 }
 
+/**
+ * OpenAI strict mode needs `additionalProperties: false` on every object.
+ * Our schemas already list every property as required, so that is all we add.
+ */
+function strictSchema(schema: unknown): unknown {
+  if (Array.isArray(schema)) return schema.map(strictSchema);
+  if (!schema || typeof schema !== "object") return schema;
+  const copy: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(schema)) copy[key] = strictSchema(value);
+  if (copy.type === "object") copy.additionalProperties = false;
+  return copy;
+}
+
 function fromStatus(status: number, keyProblem: boolean) {
   if (status === 401 || status === 403 || keyProblem) {
     return new AiError("The AI API key was rejected. Check the key in .env.local.", 500);
@@ -119,5 +132,7 @@ export function errorResponse(error: unknown) {
   if (error instanceof AiError) {
     return Response.json({ error: error.message }, { status: error.status });
   }
+  // Unexpected failures are logged on the server only; the user gets a safe message.
+  console.error("[pothik] unexpected error:", error);
   return Response.json({ error: "Something went wrong. Try again." }, { status: 500 });
 }

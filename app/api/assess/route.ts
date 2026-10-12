@@ -1,4 +1,4 @@
-import { errorResponse, generateJson } from "@/lib/ai";
+import { AiError, errorResponse, generateJson } from "@/lib/ai";
 import { assessSchema, assessSystem, MAX_QUESTIONS } from "@/lib/pothik/prompts";
 import { badRequest, parseSession } from "@/lib/pothik/request";
 import type { AssessReply } from "@/lib/pothik/types";
@@ -18,7 +18,7 @@ export async function POST(request: Request) {
       schema: assessSchema,
     });
     const message = typeof reply.message === "string" ? reply.message.trim() : "";
-    if (!message) throw new Error("empty");
+    if (!message) throw new AiError("The AI sent an empty answer. Try again.");
     // Hard stop at the question limit even if the model wants to keep going.
     const done = reply.done === true || asked >= MAX_QUESTIONS;
     return Response.json({

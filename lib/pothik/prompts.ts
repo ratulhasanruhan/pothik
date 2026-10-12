@@ -84,10 +84,10 @@ Rules for each field:
 - profileSummary: 3 to 4 sentences on strengths, work style and main blockers. Kind and honest.
 - careerPaths: exactly 3 paths that fit this person and exist in the Bangladesh job market. whyItFits links to their answers. salaryRangeBdt is an approximate monthly entry-level range in BDT, like "৳18,000 – ৳30,000 / month", and must be realistic for Bangladesh. keySkills: 3 to 6. difficulty: easy, medium or hard for this person. soloFriendly: true if the work can be done mostly independently.${focus ? " Prefer solo-friendly paths; at least two should be soloFriendly." : ""}
 - skillGap.have: skills they already show. skillGap.need: skills missing for the top path.
-- roadmap: exactly 3 phases labelled "Days 1–30", "Days 31–60", "Days 61–90" (translate the label in Bangla). Each phase has a goal and 4 weeks (weeks 1–12 in order).${
+- roadmap: exactly 3 phases in order: days 1–30, days 31–60, days 61–90. label is a short name for the phase. Each phase has a goal and 4 weeks (weeks 1–12 in order).${
     focus
       ? " Each week has exactly 5 tiny tasks, ONE task per day, each 10 to 25 minutes, written as a concrete action the user can tick off."
-      : " Each week has 3 to 5 specific tasks with realistic minutes (15 to 120)."
+      : " Each week has 3 to 5 specific, concrete tasks. Each task's minutes must fit inside the daily time the user said they have (if they did not say, assume 45 minutes a day); split bigger work into several tasks."
   }
 - resources: one or two per needed skill, 5 to 10 in total. platform must be one of: ${PLATFORMS.join(", ")}. searchPhrase is the exact course name or the phrase to type into that platform's search. Do not write any URL anywhere. cost is "free" or "low-cost".${focus ? " Prefer self-paced courses and async communities." : ""}
 - firstSmallStep: one action they can do in the next 24 hours, under 15 minutes.

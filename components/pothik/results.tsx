@@ -145,8 +145,11 @@ export function Results() {
         ) : (
           <div className="mt-4 flex flex-col gap-4">
             {result.roadmap.map((phase, p) => (
-              <article key={phase.label} className="rounded-3xl border border-line bg-surface p-5">
-                <h3 className="font-display text-xl">{phase.label}</h3>
+              <article key={p} className="rounded-3xl border border-line bg-surface p-5">
+                <h3 className="font-display text-xl">
+                  {t.phase(p)}
+                  {phase.label ? <span className="text-muted"> · {phase.label}</span> : null}
+                </h3>
                 <p className="mt-1 text-muted">{phase.goal}</p>
                 <div className="mt-4 flex flex-col gap-4">
                   {phase.weeks.map((week, w) => (
@@ -438,8 +441,8 @@ function downloadText(result: Result, t: Strings) {
   });
   lines.push("", t.skillGap, `${t.youHave}: ${result.skillGap.have.join(", ")}`, `${t.youNeed}: ${result.skillGap.need.join(", ")}`);
   lines.push("", t.roadmap);
-  for (const phase of result.roadmap) {
-    lines.push("", `${phase.label}: ${phase.goal}`);
+  for (const [p, phase] of result.roadmap.entries()) {
+    lines.push("", `${t.phase(p)} · ${phase.label}: ${phase.goal}`);
     for (const week of phase.weeks) {
       lines.push(`  ${t.week(week.week)}: ${week.focus}`);
       for (const task of week.tasks) lines.push(`    [ ] ${task.title} (${t.minutes(task.minutes)})`);
