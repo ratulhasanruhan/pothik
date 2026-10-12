@@ -55,7 +55,9 @@ export function FocusScreen() {
   return (
     <div className="mx-auto flex max-w-lg flex-col gap-6">
       <div>
-        <p className="text-sm text-muted">{store.adhdMode ? "ADHD focus" : "Only this skill"}</p>
+        <p className={`text-sm font-medium ${store.adhdMode ? "text-accent" : "text-muted"}`}>
+          {store.adhdMode ? "ADHD focus" : "Only this skill"}
+        </p>
         <h1 className="mt-2 font-display text-4xl leading-tight">{node.title}</h1>
         <p className="mt-3 leading-7 text-muted">{node.description}</p>
       </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useMemo, useSyncExternalStore } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { getRole } from "@/lib/roles";
 import {
   emptyStore,
@@ -57,18 +57,24 @@ interface ProgressValue {
   resetRole: (id: RoleId) => void;
   applyGuide: (guide: CareerGuide) => void;
   setAdhd: (on: boolean) => void;
+  setFocusScore: (score: number) => void;
 }
 
 const ProgressContext = createContext<ProgressValue | null>(null);
 
 export function ProgressProvider({ children }: { children: React.ReactNode }) {
-  const store = useSyncExternalStore(subscribe, getClientStore, () => serverStore);
+  const live = useSyncExternalStore(subscribe, getClientStore, () => serverStore);
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    setReady(true);
+  }, []);
+  const store = ready ? live : serverStore;
 
   const value = useMemo<ProgressValue>(() => {
     const role = store.selectedRoleId ? getRole(store.selectedRoleId) : null;
     const progress = store.selectedRoleId ? (store.roles[store.selectedRoleId] ?? null) : null;
     return {
-      hydrated: store !== serverStore,
+      hydrated: ready,
       store,
       role,
       progress,
@@ -154,6 +160,10 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
         const current = getClientStore();
         commit({ ...current, adhdMode: on });
       },
+      setFocusScore: (score) => {
+        const current = getClientStore();
+        commit({ ...current, focusScore: Math.max(0, Math.min(12, Math.round(score))) });
+      },
       resetRole: (id) => {
         const current = getClientStore();
         commit({
@@ -163,7 +173,7 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
         });
       },
     };
-  }, [store]);
+  }, [store, ready]);
 
   return <ProgressContext.Provider value={value}>{children}</ProgressContext.Provider>;
 }

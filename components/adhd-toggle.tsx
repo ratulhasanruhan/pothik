@@ -12,11 +12,11 @@ export function AdhdToggle({ compact = false }: { compact?: boolean }) {
         type="button"
         aria-pressed={on}
         onClick={() => setAdhd(!on)}
-        className={`inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-sm ${
-          on ? "bg-accent text-white" : "border border-line bg-background"
+        className={`inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-sm font-medium ring-2 ring-accent ${
+          on ? "bg-accent text-white" : "bg-accent-soft text-accent"
         }`}
       >
-        ADHD focus
+        ADHD
         <span>{on ? "On" : "Off"}</span>
       </button>
     );
@@ -27,19 +27,19 @@ export function AdhdToggle({ compact = false }: { compact?: boolean }) {
       type="button"
       aria-pressed={on}
       onClick={() => setAdhd(!on)}
-      className={`flex min-h-12 items-center justify-between gap-4 rounded-2xl border px-4 py-3 text-left ${
-        on ? "border-accent bg-accent-soft" : "border-line bg-surface"
+      className={`flex min-h-16 items-center justify-between gap-4 rounded-3xl border-2 border-accent px-5 py-4 text-left ${
+        on ? "bg-accent text-white" : "bg-accent-soft"
       }`}
     >
       <span>
-        <span className="block font-medium">ADHD focus</span>
-        <span className="mt-1 block text-sm leading-5 text-muted">
-          One 2-minute step. The rest of the map stays hidden.
+        <span className="mt-1 block font-display text-2xl leading-tight">Hide the full map</span>
+        <span className={`mt-1 block text-sm leading-6 ${on ? "text-white/90" : "text-muted"}`}>
+          One 2-minute step stays on screen. Your score and the HR messages stay available.
         </span>
       </span>
       <span
-        className={`inline-flex min-h-9 shrink-0 items-center rounded-full px-3 text-sm ${
-          on ? "bg-accent text-white" : "bg-background text-muted"
+        className={`inline-flex min-h-9 shrink-0 items-center rounded-full px-3 text-sm font-medium ${
+          on ? "bg-white text-accent" : "bg-accent text-white"
         }`}
       >
         {on ? "On" : "Off"}

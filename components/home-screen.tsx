@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { AdhdToggle } from "@/components/adhd-toggle";
+import { CommunicationHelp } from "@/components/communication-help";
 import { Logo } from "@/components/logo";
 import { useProgress } from "@/components/progress-context";
 import { parseLinkedInUrl } from "@/lib/linkedin-url";
@@ -62,21 +63,45 @@ export function HomeScreen() {
     <div className="mx-auto flex min-h-full w-full max-w-5xl flex-col px-4 py-10">
       <Logo size="hero" />
       <h1 className="mt-3 max-w-xl font-display text-5xl leading-tight">
-        A career map you can start in two minutes.
+        One clear step. A brand people can read.
       </h1>
       <p className="mt-4 max-w-xl text-lg leading-8 text-muted">
-        Paste a LinkedIn URL or upload a CV. The map shows what is mastered, in progress, and still missing.
+        Set a goal, keep the next step small, and turn your proof into a headline you can paste.
       </p>
-      <div className="mt-6 max-w-xl">
+      <Link
+        href="/adhd"
+        className="mt-8 flex max-w-xl flex-col gap-2 rounded-3xl border-2 border-accent bg-accent-soft px-5 py-5"
+      >
+        <span className="text-sm font-medium text-accent">ADHD focus</span>
+        <span className="font-display text-3xl leading-tight">Get a focus support score</span>
+        <span className="leading-7 text-muted">
+          Six short questions, then messages you can send to HR, a manager, an interviewer, or a recruiter.
+          {store.focusScore !== null ? ` Your last score was ${store.focusScore}/12.` : ""}
+        </span>
+        <span className="text-sm font-medium text-accent">Start the score</span>
+      </Link>
+      <div className="mt-4 max-w-xl">
         <AdhdToggle />
       </div>
-      <Link
-        href="/guide"
-        className="mt-6 flex max-w-xl flex-col gap-1 rounded-3xl border-2 border-accent bg-accent-soft px-5 py-4"
-      >
-        <span className="font-display text-xl">Not sure where to start? Talk it through with Pothik.</span>
-        <span className="text-muted">A short chat (English or বাংলা) that suggests 3 career paths and a 90-day plan.</span>
-      </Link>
+      <div className="mt-4 grid max-w-xl gap-3 sm:grid-cols-2">
+        <Link href="/profile" className="rounded-3xl border border-line bg-surface px-5 py-4">
+          <span className="block font-display text-xl">Personal brand</span>
+          <span className="mt-1 block text-sm leading-6 text-muted">Headline, About, and proof.</span>
+        </Link>
+        <Link href="/guide" className="rounded-3xl border border-line bg-surface px-5 py-4">
+          <span className="block font-display text-xl">Talk with Pothik</span>
+          <span className="mt-1 block text-sm leading-6 text-muted">English or বাংলা, one question at a time.</span>
+        </Link>
+      </div>
+      <section className="mt-10">
+        <h2 className="font-display text-2xl">Messages for HR and similar conversations</h2>
+        <p className="mt-2 max-w-xl leading-7 text-muted">
+          Copy one note when you need to write to HR, a manager, an interviewer, or a recruiter.
+        </p>
+        <div className="mt-4">
+          <CommunicationHelp />
+        </div>
+      </section>
       {saved && savedProgress ? (
         <div className="mt-8 flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-line bg-surface px-5 py-5">
           <div>

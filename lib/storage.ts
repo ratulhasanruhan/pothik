@@ -20,6 +20,7 @@ export function emptyStore(): Store {
     streak: { count: 0, lastActiveDate: null },
     guide: null,
     adhdMode: false,
+    focusScore: null,
   };
 }
 
@@ -93,6 +94,10 @@ export function sanitizeStore(value: unknown): Store {
     },
     guide: sanitizeGuide(raw.guide),
     adhdMode: raw.adhdMode === true,
+    focusScore:
+      typeof raw.focusScore === "number" && raw.focusScore >= 0 && raw.focusScore <= 12
+        ? Math.round(raw.focusScore)
+        : null,
   };
 }
 

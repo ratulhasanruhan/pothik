@@ -12,7 +12,7 @@ const links = [
   { href: "/insights", label: "Guide" },
   { href: "/guide", label: "Chat" },
   { href: "/roadmap", label: "Roadmap" },
-  { href: "/focus", label: "Focus" },
+  { href: "/adhd", label: "ADHD" },
   { href: "/bot", label: "Bot" },
   { href: "/profile", label: "Profile" },
 ];
@@ -52,7 +52,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 key={link.href}
                 href={link.href}
                 className={`inline-flex min-h-11 items-center rounded-full px-4 text-sm ${
-                  active ? "bg-accent text-white" : "bg-accent-soft text-accent"
+                  link.href === "/adhd"
+                    ? active
+                      ? "bg-accent text-white ring-2 ring-accent"
+                      : "bg-accent text-white"
+                    : active
+                      ? "bg-accent text-white"
+                      : "bg-accent-soft text-accent"
                 }`}
               >
                 {link.label}

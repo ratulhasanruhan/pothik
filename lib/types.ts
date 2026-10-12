@@ -94,4 +94,5 @@ export interface Store {
   streak: Streak;
   guide: CareerGuide | null;
   adhdMode: boolean;
+  focusScore: number | null;
 }

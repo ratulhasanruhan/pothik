@@ -73,8 +73,11 @@ function Workbench({
   return (
     <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_18rem]">
       <article className="rounded-3xl border border-line bg-surface px-6 py-8">
-        <p className="text-sm text-muted">Profile workbench</p>
+        <p className="text-sm text-accent">Personal brand</p>
         <h1 className="mt-2 font-display text-3xl">{roleTitle}</h1>
+        <p className="mt-3 max-w-xl leading-7 text-muted">
+          This is how you show up for {roleTitle}. Copy the headline, About, tags, and proof onto LinkedIn or a CV.
+        </p>
         <section className="mt-8">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-sm text-muted">LinkedIn headline</h2>
