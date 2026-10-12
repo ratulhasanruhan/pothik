@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* dark: utilities follow the class toggle, not only the OS setting. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #f3f0e8;
   --foreground: #1c1917;
@@ -11,6 +14,41 @@
   --mastered: #3d6b4f;
   --progress: #8a6232;
   --gap: #8f4a42;
+}
+
+/* Dark theme: same tokens, toggled by the "dark" class on <html>. */
+.dark {
+  --background: #161513;
+  --foreground: #ece7df;
+  --surface: #211f1c;
+  --accent: #5cb8b2;
+  --accent-soft: #1d3331;
+  --line: #36322d;
+  --muted: #a8a29e;
+  --mastered: #7fb38f;
+  --progress: #d1a066;
+  --gap: #d98a80;
+  color-scheme: dark;
+}
+
+/* "Reduce distractions": no motion anywhere, decorative extras hidden. */
+[data-calm] *,
+[data-calm] *::before,
+[data-calm] *::after {
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+}
+
+[data-calm] .calm-hide {
+  display: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
 }
 
 @theme inline {
