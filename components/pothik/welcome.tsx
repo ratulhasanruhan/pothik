@@ -2,13 +2,44 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import type { Mode } from "@/lib/pothik/types";
+import type { CvScan, Mode } from "@/lib/pothik/types";
+import { request } from "./api";
 import { useSession } from "./session";
 
 /** First screen: a warm intro and the mode choice. */
 export function Welcome() {
-  const { t, startChat, setCalm } = useSession();
+  const { t, lang, startChat, setCalm } = useSession();
   const [mode, setMode] = useState<Mode | null>(null);
+  const [targetRole, setTargetRole] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [fileKey, setFileKey] = useState(0);
+  const [reading, setReading] = useState(false);
+  const [cvError, setCvError] = useState<string | null>(null);
+
+  function begin(chosen: Mode, scan: CvScan | null = null, cvText = "") {
+    // Focus-Friendly Mode starts with a quieter screen; the toggle can undo it.
+    if (chosen === "focus") setCalm(true);
+    startChat(chosen, { targetRole: targetRole.trim(), cvText }, scan);
+  }
+
+  // Scans the CV first (if one was added), then starts the chat.
+  async function onStart() {
+    if (!mode || reading) return;
+    if (!file) return begin(mode);
+    setReading(true);
+    setCvError(null);
+    try {
+      const body = new FormData();
+      body.set("cv", file);
+      body.set("lang", lang);
+      body.set("targetRole", targetRole.trim());
+      const data = await request<{ scan: CvScan; cvText: string }>("/api/cv/scan", { body }, t.cvFailed);
+      begin(mode, data.scan, data.cvText);
+    } catch (err) {
+      setCvError(err instanceof Error ? err.message : t.cvFailed);
+      setReading(false);
+    }
+  }
 
   const options: { id: Mode; title: string; body: string }[] = [
     { id: "standard", title: t.standardTitle, body: t.standardBody },
@@ -60,19 +91,77 @@ export function Welcome() {
         </div>
       </section>
 
+      <section className="flex flex-col gap-4 rounded-3xl border border-line bg-surface p-5">
+        <div>
+          <h2 className="font-display text-2xl">{t.aboutYou}</h2>
+          <p className="mt-1 text-muted">{t.aboutYouHint}</p>
+        </div>
+        <label className="flex flex-col gap-2">
+          <span className="text-sm text-muted">{t.targetRole}</span>
+          <input
+            type="text"
+            value={targetRole}
+            maxLength={120}
+            onChange={(event) => setTargetRole(event.target.value)}
+            placeholder={t.targetRolePlaceholder}
+            className="min-h-12 rounded-2xl border border-line bg-background px-4 outline-none focus:border-accent"
+          />
+        </label>
+        <div className="flex flex-col gap-2">
+          <label htmlFor="pothik-cv" className="text-sm text-muted">
+            {t.cvUpload}
+          </label>
+          <div className="flex flex-wrap items-center gap-3">
+            <input
+              key={fileKey}
+              id="pothik-cv"
+              type="file"
+              accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
+              onChange={(event) => {
+                setFile(event.target.files?.[0] ?? null);
+                setCvError(null);
+              }}
+              className="min-h-12 flex-1 rounded-2xl border border-line bg-background px-4 py-3"
+            />
+            {file ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setFile(null);
+                  setFileKey((key) => key + 1);
+                  setCvError(null);
+                }}
+                className="min-h-10 rounded-full border border-line px-4 text-sm"
+              >
+                {t.cvRemove}
+              </button>
+            ) : null}
+          </div>
+        </div>
+        {cvError ? (
+          <div role="alert" className="flex flex-wrap items-center gap-3 rounded-2xl border border-gap px-4 py-3">
+            <p className="flex-1 text-gap">{cvError}</p>
+            {mode ? (
+              <button
+                type="button"
+                onClick={() => begin(mode)}
+                className="min-h-10 rounded-full border border-line px-4 text-sm"
+              >
+                {t.continueWithoutCv}
+              </button>
+            ) : null}
+          </div>
+        ) : null}
+      </section>
+
       <div className="flex flex-col gap-3">
         <button
           type="button"
-          disabled={!mode}
-          onClick={() => {
-            if (!mode) return;
-            // Focus-Friendly Mode starts with a quieter screen; the toggle can undo it.
-            if (mode === "focus") setCalm(true);
-            startChat(mode);
-          }}
+          disabled={!mode || reading}
+          onClick={() => void onStart()}
           className="inline-flex min-h-14 items-center justify-center rounded-full bg-accent px-6 text-lg text-white disabled:opacity-50 dark:text-background"
         >
-          {t.start}
+          {reading ? t.cvReading : t.start}
         </button>
         <p className="text-center text-sm text-muted">{t.privacy}</p>
       </div>
