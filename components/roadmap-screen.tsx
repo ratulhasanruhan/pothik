@@ -7,7 +7,7 @@ import { useProgress } from "@/components/progress-context";
 import type { SkillNode } from "@/lib/types";
 
 export function RoadmapScreen() {
-  const { role, progress } = useProgress();
+  const { role, progress, store } = useProgress();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [paths, setPaths] = useState<string[]>([]);
   const [narrow, setNarrow] = useState(false);
@@ -61,6 +61,11 @@ export function RoadmapScreen() {
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+      {store.note ? (
+        <p className="rounded-2xl border border-line bg-surface px-4 py-3 text-sm leading-6 text-muted lg:col-span-2">
+          {store.note}
+        </p>
+      ) : null}
       <div ref={containerRef} className="relative flex flex-col gap-12">
         {paths.length > 0 ? (
           <svg className="pointer-events-none absolute inset-0 h-full w-full" aria-hidden>

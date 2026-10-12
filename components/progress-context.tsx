@@ -54,6 +54,7 @@ interface ProgressValue {
   setStatus: (nodeId: string, status: SkillStatus) => void;
   toggleStep: (nodeId: string, stepId: string, done: boolean) => void;
   resetRole: (id: RoleId) => void;
+  applyGuide: (roleId: RoleId, statuses: Record<string, SkillStatus>, note: string) => void;
 }
 
 const ProgressContext = createContext<ProgressValue | null>(null);
@@ -74,10 +75,28 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
         commit({
           ...current,
           selectedRoleId: id,
+          note: null,
           roles: {
             ...current.roles,
             [id]: current.roles[id] ?? initialRoleProgress(getRole(id)),
           },
+        });
+      },
+      applyGuide: (roleId, statuses, note) => {
+        const role = getRole(roleId);
+        const progress = initialRoleProgress(role);
+        for (const node of role.nodes) {
+          const status = statuses[node.id];
+          if (status === "mastered" || status === "in_progress" || status === "gap") {
+            progress.nodeStatus[node.id] = status;
+          }
+        }
+        const current = getClientStore();
+        commit({
+          ...current,
+          selectedRoleId: roleId,
+          note,
+          roles: { ...current.roles, [roleId]: progress },
         });
       },
       setStatus: (nodeId, status) => {
@@ -109,6 +128,7 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
         const current = getClientStore();
         commit({
           ...current,
+          note: current.selectedRoleId === id ? null : current.note,
           roles: { ...current.roles, [id]: initialRoleProgress(getRole(id)) },
         });
       },

@@ -55,4 +55,5 @@ export interface Store {
   selectedRoleId: RoleId | null;
   roles: Partial<Record<RoleId, RoleProgress>>;
   streak: Streak;
+  note: string | null;
 }

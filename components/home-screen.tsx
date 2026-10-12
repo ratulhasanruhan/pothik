@@ -1,17 +1,55 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { useProgress } from "@/components/progress-context";
+import { parseLinkedInUrl } from "@/lib/linkedin-url";
 import { roles } from "@/lib/roles";
 import { readinessPercent } from "@/lib/readiness";
+import type { PersonalizedGuide } from "@/lib/personalize";
 import type { RoleId } from "@/lib/types";
 
 export function HomeScreen() {
   const router = useRouter();
-  const { store, selectRole, resetRole } = useProgress();
+  const { store, selectRole, resetRole, applyGuide } = useProgress();
+  const [linkedin, setLinkedin] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const saved = store.selectedRoleId ? roles.find((role) => role.id === store.selectedRoleId) : null;
   const savedProgress = saved ? store.roles[saved.id] : null;
   const percent = saved && savedProgress ? readinessPercent(saved, savedProgress.nodeStatus) : 0;
+
+  async function onPersonalize(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError(null);
+    if (!linkedin.trim() && !file) {
+      setError("Add a LinkedIn URL or a CV.");
+      return;
+    }
+    if (linkedin.trim() && !parseLinkedInUrl(linkedin)) {
+      setError("Use a LinkedIn profile link, like linkedin.com/in/your-name.");
+      return;
+    }
+    const body = new FormData();
+    if (linkedin.trim()) body.set("linkedinUrl", linkedin.trim());
+    if (file) body.set("cv", file);
+    setPending(true);
+    try {
+      const response = await fetch("/api/personalize", { method: "POST", body });
+      const data = (await response.json()) as PersonalizedGuide & { error?: string };
+      if (!response.ok || !data.roleId || !data.statuses) {
+        setError(data.error ?? "The guide could not be built.");
+        return;
+      }
+      applyGuide(data.roleId, data.statuses, data.note);
+      router.push("/roadmap");
+    } catch {
+      setError("The guide could not be built. Try again.");
+    } finally {
+      setPending(false);
+    }
+  }
 
   function start(id: RoleId) {
     selectRole(id);
@@ -25,7 +63,7 @@ export function HomeScreen() {
         A career map you can start in two minutes.
       </h1>
       <p className="mt-4 max-w-xl text-lg leading-8 text-muted">
-        Pick a role. The map shows what is mastered, in progress, and still missing. No chat.
+        Paste a LinkedIn URL or upload a CV. The map shows what is mastered, in progress, and still missing.
       </p>
       {saved && savedProgress ? (
         <div className="mt-8 flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-line bg-surface px-5 py-5">
@@ -57,7 +95,46 @@ export function HomeScreen() {
           </div>
         </div>
       ) : null}
-      <div className="mt-10 grid gap-4 md:grid-cols-3">
+      <form
+        onSubmit={onPersonalize}
+        className="mt-8 flex flex-col gap-4 rounded-3xl border border-line bg-surface p-5"
+      >
+        <div>
+          <h2 className="font-display text-2xl">Start from your profile</h2>
+          <p className="mt-2 text-muted">
+            A LinkedIn link is enough to begin. A CV makes the skill colors closer to your experience.
+          </p>
+        </div>
+        <label className="flex flex-col gap-2">
+          <span className="text-sm text-muted">LinkedIn URL</span>
+          <input
+            type="url"
+            value={linkedin}
+            onChange={(event) => setLinkedin(event.target.value)}
+            placeholder="https://www.linkedin.com/in/your-name"
+            className="min-h-12 rounded-2xl border border-line bg-background px-4"
+          />
+        </label>
+        <label className="flex flex-col gap-2">
+          <span className="text-sm text-muted">CV, PDF, DOCX, or TXT</span>
+          <input
+            type="file"
+            accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
+            onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+            className="min-h-12 rounded-2xl border border-line bg-background px-4 py-3"
+          />
+        </label>
+        {error ? <p className="text-sm text-gap">{error}</p> : null}
+        <button
+          type="submit"
+          disabled={pending}
+          className="inline-flex min-h-12 items-center justify-center rounded-full bg-accent px-5 text-white disabled:opacity-70"
+        >
+          {pending ? "Building your map…" : "Continue"}
+        </button>
+      </form>
+      <h2 className="mt-10 font-display text-2xl">Or pick a role</h2>
+      <div className="mt-4 grid gap-4 md:grid-cols-3">
         {roles.map((role) => (
           <button
             key={role.id}

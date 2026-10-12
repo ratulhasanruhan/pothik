@@ -8,6 +8,7 @@ export function emptyStore(): Store {
     selectedRoleId: null,
     roles: {},
     streak: { count: 0, lastActiveDate: null },
+    note: null,
   };
 }
 
@@ -79,6 +80,7 @@ export function sanitizeStore(value: unknown): Store {
       count: typeof streak?.count === "number" && streak.count >= 0 ? streak.count : 0,
       lastActiveDate: typeof streak?.lastActiveDate === "string" ? streak.lastActiveDate : null,
     },
+    note: typeof raw.note === "string" ? raw.note.slice(0, 400) : null,
   };
 }
 
