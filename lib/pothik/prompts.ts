@@ -76,19 +76,17 @@ export const assessSchema = {
   },
 };
 
+// The review is built by several calls that run in parallel (core review +
+// one call per 30-day phase), so the user waits for the slowest call only.
+
 export function analyzeSystem(mode: Mode, lang: Lang) {
   const focus = mode === "focus";
-  return `You are Pothik, an honest, kind AI career guide for Bangladesh. Read the assessment conversation and write a personalised career review as JSON.
+  return `You are Pothik, an honest, kind AI career guide for Bangladesh. Read the assessment conversation and write a personalised career review as JSON. (The 90-day roadmap is written separately.)
 
 Rules for each field:
 - profileSummary: 3 to 4 sentences on strengths, work style and main blockers. Kind and honest.
-- careerPaths: exactly 3 paths that fit this person and exist in the Bangladesh job market. whyItFits links to their answers. salaryRangeBdt is an approximate monthly entry-level range in BDT, like "৳18,000 – ৳30,000 / month", and must be realistic for Bangladesh. keySkills: 3 to 6. difficulty: easy, medium or hard for this person. soloFriendly: true if the work can be done mostly independently.${focus ? " Prefer solo-friendly paths; at least two should be soloFriendly." : ""}
+- careerPaths: exactly 3 paths, best fit first, that fit this person and exist in the Bangladesh job market. whyItFits links to their answers. salaryRangeBdt is an approximate monthly entry-level range in BDT, like "৳18,000 – ৳30,000 / month", and must be realistic for Bangladesh. keySkills: 3 to 6. difficulty: easy, medium or hard for this person. soloFriendly: true if the work can be done mostly independently.${focus ? " Prefer solo-friendly paths; at least two should be soloFriendly." : ""}
 - skillGap.have: skills they already show. skillGap.need: skills missing for the top path.
-- roadmap: exactly 3 phases in order: days 1–30, days 31–60, days 61–90. label is a short name for the phase. Each phase has a goal and 4 weeks (weeks 1–12 in order).${
-    focus
-      ? " Each week has exactly 5 tiny tasks, ONE task per day, each 10 to 25 minutes, written as a concrete action the user can tick off."
-      : " Each week has 3 to 5 specific, concrete tasks. Each task's minutes must fit inside the daily time the user said they have (if they did not say, assume 45 minutes a day); split bigger work into several tasks."
-  }
 - resources: one or two per needed skill, 5 to 10 in total. platform must be one of: ${PLATFORMS.join(", ")}. searchPhrase is the exact course name or the phrase to type into that platform's search. Do not write any URL anywhere. cost is "free" or "low-cost".${focus ? " Prefer self-paced courses and async communities." : ""}
 - firstSmallStep: one action they can do in the next 24 hours, under 15 minutes.
 - jobTips: ${focus ? "an empty array." : "4 to 6 practical tips covering networking, CV, LinkedIn and interviews, specific to Bangladesh (e.g. Bdjobs, LinkedIn, alumni groups)."}
@@ -101,15 +99,40 @@ ${languageRule(lang)}
 ${safetyRules}`;
 }
 
+const PHASE_FOCUS = [
+  "foundations: the first basic skills for the path, set up tools, small practice",
+  "core skills and one small project the user can show",
+  "portfolio polish, CV, LinkedIn profile and the first job or internship applications",
+];
+
+/** Prompt for one 30-day phase (0, 1 or 2) of the roadmap. */
+export function phaseSystem(mode: Mode, lang: Lang, phase: number) {
+  const focus = mode === "focus";
+  const firstWeek = phase * 4 + 1;
+  return `You are Pothik, an AI career guide for Bangladesh. Read the assessment conversation, decide the single best-fit entry-level career path for this person in the Bangladesh job market, and write ONE phase of their 90-day roadmap toward it as JSON.
+
+This is days ${phase * 30 + 1}–${phase * 30 + 30}, weeks ${firstWeek}–${firstWeek + 3}. Its theme: ${PHASE_FOCUS[phase]}.
+- label: a short name for this phase (2 to 4 words).
+- goal: one sentence.
+- weeks: exactly 4 weeks numbered ${firstWeek} to ${firstWeek + 3}, each with a short focus.${
+    focus
+      ? " Each week has exactly 5 tiny tasks, ONE task per day, each 10 to 25 minutes, written as a concrete action the user can tick off."
+      : " Each week has 3 to 5 specific, concrete tasks. Each task's minutes must fit inside the daily time the user said they have (if they did not say, assume 45 minutes a day); split bigger work into several tasks."
+  }
+Keep task titles short (under 15 words). Never put URLs anywhere. Never promise a job.
+${modeRule(mode)}
+${languageRule(lang)}`;
+}
+
 const stringArray = { type: "array", items: { type: "string" } };
 
-export const resultSchema = {
+/** Schema for the core review (everything except the roadmap). */
+export const coreSchema = {
   type: "object",
   required: [
     "profileSummary",
     "careerPaths",
     "skillGap",
-    "roadmap",
     "resources",
     "firstSmallStep",
     "jobTips",
@@ -137,36 +160,6 @@ export const resultSchema = {
       type: "object",
       required: ["have", "need"],
       properties: { have: stringArray, need: stringArray },
-    },
-    roadmap: {
-      type: "array",
-      items: {
-        type: "object",
-        required: ["label", "goal", "weeks"],
-        properties: {
-          label: { type: "string" },
-          goal: { type: "string" },
-          weeks: {
-            type: "array",
-            items: {
-              type: "object",
-              required: ["week", "focus", "tasks"],
-              properties: {
-                week: { type: "integer" },
-                focus: { type: "string" },
-                tasks: {
-                  type: "array",
-                  items: {
-                    type: "object",
-                    required: ["title", "minutes"],
-                    properties: { title: { type: "string" }, minutes: { type: "integer" } },
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
     },
     resources: {
       type: "array",
@@ -203,5 +196,34 @@ export const resultSchema = {
       },
     },
     stayOnTrackTips: stringArray,
+  },
+};
+
+/** Schema for one roadmap phase. */
+export const phaseSchema = {
+  type: "object",
+  required: ["label", "goal", "weeks"],
+  properties: {
+    label: { type: "string" },
+    goal: { type: "string" },
+    weeks: {
+      type: "array",
+      items: {
+        type: "object",
+        required: ["week", "focus", "tasks"],
+        properties: {
+          week: { type: "integer" },
+          focus: { type: "string" },
+          tasks: {
+            type: "array",
+            items: {
+              type: "object",
+              required: ["title", "minutes"],
+              properties: { title: { type: "string" }, minutes: { type: "integer" } },
+            },
+          },
+        },
+      },
+    },
   },
 };
