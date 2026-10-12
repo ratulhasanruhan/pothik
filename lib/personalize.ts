@@ -1,3 +1,4 @@
+import { generateJson } from "./ai";
 import { safePhotoUrl } from "./photo-url";
 import { roles } from "./roles";
 import type { PublicLinkedIn } from "./read-profile";
@@ -34,11 +35,6 @@ export async function personalizeGuide(input: {
   linkedin: PublicLinkedIn;
   cvText: string;
 }): Promise<CareerGuide> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    throw new Error("Add OPENAI_API_KEY to .env.local, then restart the app.");
-  }
-
   const catalog = roles.map((role) => ({
     id: role.id,
     title: role.title,
@@ -66,92 +62,69 @@ export async function personalizeGuide(input: {
     .filter(Boolean)
     .join("\n\n");
 
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: process.env.OPENAI_MODEL ?? "gpt-4o-mini",
-      temperature: 0.2,
-      response_format: {
-        type: "json_schema",
-        json_schema: {
-          name: "career_guide",
-          strict: true,
-          schema: {
-            type: "object",
-            additionalProperties: false,
-            required: [
-              "roleId",
-              "analysis",
-              "strengths",
-              "gaps",
-              "nextStep",
-              "suggestedHeadline",
-              "suggestedAbout",
-              "linkedin",
-              "statuses",
-            ],
-            properties: {
-              roleId: { type: "string", enum: roleIds },
-              analysis: line,
-              strengths: { type: "array", items: line },
-              gaps: { type: "array", items: line },
-              nextStep: line,
-              suggestedHeadline: line,
-              suggestedAbout: line,
-              linkedin: {
-                type: "object",
-                additionalProperties: false,
-                required: ["name", "headline", "location", "about", "experiences", "education", "skills"],
-                properties: {
-                  name: line,
-                  headline: line,
-                  location: line,
-                  about: line,
-                  experiences: { type: "array", items: experience },
-                  education: { type: "array", items: school },
-                  skills: { type: "array", items: line },
-                },
-              },
-              statuses: { type: "array", items: statusItem },
-            },
+  const parsed = await generateJson<{
+    roleId?: RoleId;
+    analysis?: string;
+    strengths?: string[];
+    gaps?: string[];
+    nextStep?: string;
+    suggestedHeadline?: string;
+    suggestedAbout?: string;
+    linkedin?: Partial<LinkedInProfile>;
+    statuses?: { id?: string; status?: SkillStatus; reason?: string }[];
+  }>({
+    system: [
+      "You build a career guide for a job seeker in Bangladesh.",
+      "Copy LinkedIn fields only when that fact appears in the evidence. If it does not appear, use an empty string or an empty list.",
+      "Do not invent employers, job titles, schools, dates, locations, or skills.",
+      "Choose one seeded role. Mark a skill mastered only when the evidence shows it. Mark in_progress when it is started but unfinished. Otherwise keep defaultStatus.",
+      "Give one short reason for every node of the chosen role.",
+      "analysis is 2 or 3 sentences on the fit. strengths and gaps are short phrases. nextStep is one concrete action.",
+      "suggestedHeadline and suggestedAbout are ready to paste on LinkedIn and must only claim skills the evidence supports.",
+    ].join(" "),
+    turns: [{ role: "user", text: `Roles:\n${JSON.stringify(catalog)}\n\nEvidence:\n${evidence}` }],
+    schema: {
+      type: "object",
+      additionalProperties: false,
+      required: [
+        "roleId",
+        "analysis",
+        "strengths",
+        "gaps",
+        "nextStep",
+        "suggestedHeadline",
+        "suggestedAbout",
+        "linkedin",
+        "statuses",
+      ],
+      properties: {
+        roleId: { type: "string", enum: roleIds },
+        analysis: line,
+        strengths: { type: "array", items: line },
+        gaps: { type: "array", items: line },
+        nextStep: line,
+        suggestedHeadline: line,
+        suggestedAbout: line,
+        linkedin: {
+          type: "object",
+          additionalProperties: false,
+          required: ["name", "headline", "location", "about", "experiences", "education", "skills"],
+          properties: {
+            name: line,
+            headline: line,
+            location: line,
+            about: line,
+            experiences: { type: "array", items: experience },
+            education: { type: "array", items: school },
+            skills: { type: "array", items: line },
           },
         },
+        statuses: { type: "array", items: statusItem },
       },
-      messages: [
-        {
-          role: "system",
-          content: [
-            "You build a career guide for a job seeker in Bangladesh.",
-            "Copy LinkedIn fields only when that fact appears in the evidence. If it does not appear, use an empty string or an empty list.",
-            "Do not invent employers, job titles, schools, dates, locations, or skills.",
-            "Choose one seeded role. Mark a skill mastered only when the evidence shows it. Mark in_progress when it is started but unfinished. Otherwise keep defaultStatus.",
-            "Give one short reason for every node of the chosen role.",
-            "analysis is 2 or 3 sentences on the fit. strengths and gaps are short phrases. nextStep is one concrete action.",
-            "suggestedHeadline and suggestedAbout are ready to paste on LinkedIn and must only claim skills the evidence supports.",
-          ].join(" "),
-        },
-        { role: "user", content: `Roles:\n${JSON.stringify(catalog)}\n\nEvidence:\n${evidence}` },
-      ],
-    }),
+    },
   });
 
-  if (!response.ok) {
-    if (response.status === 401) {
-      throw new Error("The OpenAI API key was rejected. Check OPENAI_API_KEY in .env.local.");
-    }
-    throw new Error("The guide could not be built. Try again in a moment.");
-  }
-
-  const payload = (await response.json()) as {
-    choices?: { message?: { content?: string } }[];
-  };
-  const content = payload.choices?.[0]?.message?.content;
-  if (!content) throw new Error("The guide could not be built. Try again in a moment.");
-  return normalizeGuide(JSON.parse(content), input);
+  return normalizeGuide(parsed, input);
 }
 
 function normalizeGuide(
@@ -197,14 +170,14 @@ function normalizeGuide(
   const profile = parsed.linkedin;
   const experiences = (profile?.experiences ?? [])
     .map((item) => ({
-      role: keep(item.role),
-      organization: keep(item.organization),
-      time: keep(item.time),
+      role: keep(item.role ?? ""),
+      organization: keep(item.organization ?? ""),
+      time: keep(item.time ?? ""),
     }))
     .filter((item) => item.role || item.organization)
     .slice(0, 4);
   const education = (profile?.education ?? [])
-    .map((item) => ({ school: keep(item.school), detail: keep(item.detail) }))
+    .map((item) => ({ school: keep(item.school ?? ""), detail: keep(item.detail ?? "") }))
     .filter((item) => item.school)
     .slice(0, 3);
   const skills = (profile?.skills ?? []).map((skill) => keep(skill)).filter(Boolean).slice(0, 12);

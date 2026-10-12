@@ -9,7 +9,8 @@ import { useProgress } from "@/components/progress-context";
 import { readinessPercent } from "@/lib/readiness";
 
 const links = [
-  { href: "/guide", label: "Guide" },
+  { href: "/insights", label: "Guide" },
+  { href: "/guide", label: "Chat" },
   { href: "/roadmap", label: "Roadmap" },
   { href: "/focus", label: "Focus" },
   { href: "/bot", label: "Bot" },

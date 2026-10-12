@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { AdhdToggle } from "@/components/adhd-toggle";
@@ -44,7 +45,7 @@ export function HomeScreen() {
         return;
       }
       applyGuide(data);
-      router.push("/guide");
+      router.push("/insights");
     } catch {
       setError("The guide could not be built. Try again.");
     } finally {
@@ -69,6 +70,13 @@ export function HomeScreen() {
       <div className="mt-6 max-w-xl">
         <AdhdToggle />
       </div>
+      <Link
+        href="/guide"
+        className="mt-6 flex max-w-xl flex-col gap-1 rounded-3xl border-2 border-accent bg-accent-soft px-5 py-4"
+      >
+        <span className="font-display text-xl">Not sure where to start? Talk it through with Pothik.</span>
+        <span className="text-muted">A short chat (English or বাংলা) that suggests 3 career paths and a 90-day plan.</span>
+      </Link>
       {saved && savedProgress ? (
         <div className="mt-8 flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-line bg-surface px-5 py-5">
           <div>
