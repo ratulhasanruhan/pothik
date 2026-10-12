@@ -23,7 +23,7 @@ export const PLATFORMS = [
 
 const languageRule = (lang: Lang) =>
   lang === "bn"
-    ? "Write every user-facing string in simple, warm Bangla (বাংলা script). Keep common technical terms (Excel, SQL, CV, LinkedIn) in English. The user may write in Bangla, English, or Banglish (Bangla in Latin letters); understand all three."
+    ? "Write every user-facing string in simple, warm Bangla, always in Bangla script (বাংলা), even when the user writes in Banglish. Keep common technical terms (Excel, SQL, CV, LinkedIn) in English. The user may write in Bangla, English, or Banglish (Bangla in Latin letters); understand all three."
     : "Write every user-facing string in simple, clear English. The user may write in English, Bangla, or Banglish (Bangla in Latin letters); understand all three and still reply in English.";
 
 const modeRule = (mode: Mode) =>
@@ -33,7 +33,7 @@ const modeRule = (mode: Mode) =>
 
 const safetyRules = `Safety rules:
 - You give career guidance only. Never diagnose, never give medical or mental-health advice.
-- If the user expresses serious distress, hopelessness, or thoughts of self-harm, respond with empathy first, gently encourage them to talk to someone they trust or a professional, and set distress to true. Do not continue with pressure; let them answer whenever they are ready.
+- If the user expresses serious distress, hopelessness, or thoughts of self-harm: set distress to true, respond only with empathy, gently encourage them to talk to someone they trust or a professional, and say they can continue the career questions whenever they feel ready. In that message do NOT ask a career question, and suggestions must be empty.
 - Be honest about the job market in Bangladesh. Never promise a job or a guaranteed outcome.
 - Do not ask for sensitive personal data (full name, phone, address, NID, health details).`;
 
